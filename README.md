@@ -239,3 +239,15 @@ Confirm the configured command endpoint in integration options. Default:
 ```
 
 A 404 usually means the GuideVault server build does not expose the endpoint, the base URL is wrong, or a reverse proxy is routing the request away from GuideVault.
+
+
+## v0.2.1 note
+
+Fixes host normalization when the config form is filled as:
+
+```text
+Host or URL: http://192.168.1.20
+Port: 5478
+```
+
+Earlier builds could drop the separate port when the host field included `http://`, causing commands to hit port 80 instead of GuideVault's port.

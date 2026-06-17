@@ -156,8 +156,9 @@ def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
     if host.startswith("http://") or host.startswith("https://"):
         parsed = urlparse(host)
         normalized[CONF_SSL] = parsed.scheme == "https"
+        entered_port = normalized.get(CONF_PORT)
         normalized[CONF_HOST] = parsed.hostname or host
-        normalized[CONF_PORT] = parsed.port
+        normalized[CONF_PORT] = parsed.port or entered_port
 
         if parsed.path and parsed.path != "/":
             normalized[CONF_HOST] = host

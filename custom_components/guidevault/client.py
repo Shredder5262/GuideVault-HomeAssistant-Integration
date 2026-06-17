@@ -41,8 +41,15 @@ class GuideVaultClientConfig:
         if host.startswith("http://") or host.startswith("https://"):
             parsed = urlparse(host)
             scheme = parsed.scheme
-            netloc = parsed.netloc
+            hostname = parsed.hostname or parsed.netloc
             path = parsed.path.rstrip("/")
+            port = parsed.port or self.port
+
+            if port:
+                netloc = f"{hostname}:{port}"
+            else:
+                netloc = hostname
+
             return f"{scheme}://{netloc}{path}"
 
         scheme = "https" if self.ssl else "http"
