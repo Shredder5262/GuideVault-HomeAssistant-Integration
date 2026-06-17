@@ -251,3 +251,15 @@ Port: 5478
 ```
 
 Earlier builds could drop the separate port when the host field included `http://`, causing commands to hit port 80 instead of GuideVault's port.
+
+
+## v0.3.0 note
+
+Adds Home Assistant `select` and `number` entities for reader settings:
+
+- Background dropdown
+- Display mode dropdown
+- Background brightness slider
+- Zoom number control
+
+Status parsing is more flexible and now looks for several common GuideVault status field names. The integration also tries common version/info endpoints if `/api/home-assistant/status` does not include a version value.

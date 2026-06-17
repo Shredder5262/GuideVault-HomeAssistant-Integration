@@ -95,6 +95,22 @@
       "version": {
         "name": "Version"
       }
+    },
+    "select": {
+      "background_select": {
+        "name": "Background"
+      },
+      "display_mode_select": {
+        "name": "Display mode"
+      }
+    },
+    "number": {
+      "background_brightness_control": {
+        "name": "Background brightness"
+      },
+      "zoom_control": {
+        "name": "Zoom"
+      }
     }
   }
 }

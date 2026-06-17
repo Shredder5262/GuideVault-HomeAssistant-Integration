@@ -5,13 +5,13 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "guidevault"
-PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR, Platform.SELECT, Platform.NUMBER]
 
 DEFAULT_NAME = "GuideVault"
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 5478
 DEFAULT_TIMEOUT = 10
-DEFAULT_SCAN_INTERVAL = 10
+DEFAULT_SCAN_INTERVAL = 3
 
 CONF_API_KEY = "api_key"
 CONF_SSL = "ssl"
@@ -62,4 +62,24 @@ ITEM_KINDS = [
     "strategy_guide",
     "strategy-guide",
     "magazine",
+]
+
+DEFAULT_BACKGROUNDS = [
+    "default",
+    "dark",
+    "black",
+    "gray",
+    "white",
+    "paper",
+    "sepia",
+    "wood",
+    "transparent",
+]
+
+DEFAULT_DISPLAY_MODES = [
+    "single",
+    "double",
+    "adaptive",
+    "fit_width",
+    "fit_height",
 ]

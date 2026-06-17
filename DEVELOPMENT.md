@@ -31,3 +31,8 @@ GET  /api/home-assistant/status
 3. Add the integration from the UI.
 4. Test commands from Developer Tools > Actions.
 5. Confirm status sensors update from `/api/home-assistant/status`.
+
+
+## v0.3.0
+
+Adds select/number platforms and delayed status refresh after commands.

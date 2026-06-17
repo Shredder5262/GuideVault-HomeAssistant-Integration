@@ -93,12 +93,7 @@ class GuideVaultClient:
         return headers
 
     async def async_test_connection(self) -> None:
-        """Test whether GuideVault can be reached.
-
-        The status endpoint is preferred, but older GuideVault builds may not
-        have it. In that case, any non-5xx response from the base URL is enough
-        to allow setup.
-        """
+        """Test whether GuideVault can be reached."""
         probes = (
             _normalize_endpoint(self._config.status_endpoint),
             "/api/health",
@@ -128,34 +123,62 @@ class GuideVaultClient:
         )
 
     async def async_status(self) -> dict[str, Any]:
-        """Read GuideVault status."""
+        """Read GuideVault status and enrich it with version info when possible."""
+        data = await self._async_get_json_or_text(self.status_url, fail_on_http_error=True)
+
+        if not isinstance(data, dict):
+            data = {"ok": True, "value": data}
+
+        if not _has_any_key(data, ("version", "serverVersion", "guideVaultVersion", "appVersion")):
+            version = await self._async_read_version_fallback()
+            if version:
+                data["version"] = version
+
+        return data
+
+    async def _async_read_version_fallback(self) -> str | None:
+        """Try common GuideVault/version endpoints without failing status."""
+        for path in (
+            "/api/home-assistant/info",
+            "/api/info",
+            "/api/system/info",
+            "/api/version",
+            "/version",
+        ):
+            try:
+                value = await self._async_get_json_or_text(f"{self.base_url}{path}", fail_on_http_error=False)
+            except (GuideVaultConnectionError, GuideVaultApiError):
+                continue
+
+            version = _extract_version(value)
+            if version:
+                return version
+
+        return None
+
+    async def _async_get_json_or_text(self, url: str, *, fail_on_http_error: bool) -> Any:
+        """Read a JSON endpoint, falling back to text."""
         try:
             async with asyncio.timeout(self._config.timeout):
                 async with self._session.get(
-                    self.status_url,
+                    url,
                     headers=self._headers(),
                     ssl=self._config.verify_ssl,
                 ) as response:
                     text = await response.text()
 
                     if response.status < 200 or response.status >= 300:
-                        raise GuideVaultApiError(
-                            f"GuideVault status failed with HTTP {response.status}: {text}"
-                        )
+                        if fail_on_http_error:
+                            raise GuideVaultApiError(
+                                f"GuideVault status failed with HTTP {response.status}: {text}"
+                            )
+                        return None
 
                     content_type = response.headers.get("Content-Type", "")
-                    if "application/json" not in content_type:
-                        return {
-                            "ok": True,
-                            "raw": text,
-                            "statusEndpoint": self.status_url,
-                        }
+                    if "application/json" in content_type:
+                        return await response.json()
 
-                    data = await response.json()
-                    if isinstance(data, dict):
-                        return data
-
-                    return {"ok": True, "value": data}
+                    return text
         except GuideVaultApiError:
             raise
         except (TimeoutError, ClientResponseError, ClientError, OSError) as err:
@@ -196,13 +219,7 @@ class GuideVaultClient:
 
 
 def build_guidevault_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Convert Home Assistant service data into GuideVault's REST payload.
-
-    GuideVault's existing Home Assistant REST command payload uses camelCase
-    names, for example action, itemTitle, itemKind, issueNumber, displayMode,
-    and backgroundBrightness. This function preserves that contract while still
-    accepting Home Assistant-friendly snake_case service fields.
-    """
+    """Convert Home Assistant service data into GuideVault's REST payload."""
     incoming = dict(payload)
 
     extra_payload = incoming.pop("payload", None)
@@ -222,9 +239,13 @@ def build_guidevault_payload(payload: dict[str, Any]) -> dict[str, Any]:
     item_kind = _first(incoming, "itemKind", "item_kind", "content_type") or ""
     item_kind = _normalize_item_kind(item_kind)
 
+    # commandAction is included as a compatibility alias. GuideVault builds that
+    # read only action will ignore it, while older command handlers can still
+    # bind it.
     return _clean_payload(
         {
             "action": action,
+            "commandAction": action,
             "itemTitle": _first(incoming, "itemTitle", "item_title", "title") or "",
             "itemKind": item_kind,
             "issueNumber": _first(incoming, "issueNumber", "issue_number", "issue") or "",
@@ -298,3 +319,30 @@ def _optional_bool(value: Any) -> bool | None:
 
 def _clean_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in payload.items() if value is not None}
+
+
+def _has_any_key(data: dict[str, Any], keys: tuple[str, ...]) -> bool:
+    lowered = {str(key).lower() for key in data}
+    return any(key.lower() in lowered for key in keys)
+
+
+def _extract_version(value: Any) -> str | None:
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        text = value.strip()
+        return text if text and len(text) < 80 and "<html" not in text.lower() else None
+
+    if isinstance(value, dict):
+        for key in ("version", "serverVersion", "guideVaultVersion", "appVersion"):
+            item = value.get(key)
+            if item not in (None, ""):
+                return str(item)
+
+        for item in value.values():
+            version = _extract_version(item)
+            if version:
+                return version
+
+    return None

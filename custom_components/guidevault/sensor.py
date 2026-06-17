@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any, Callable
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
@@ -16,39 +17,52 @@ from .const import DATA_COORDINATORS, DOMAIN
 from .coordinator import GuideVaultDataUpdateCoordinator
 
 
-def _first(data: dict[str, Any], *paths: str) -> Any:
-    """Return the first populated value from dotted paths."""
-    for path in paths:
-        current: Any = data
-        found = True
+def _normalize_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(value).lower())
 
-        for part in path.split("."):
-            if isinstance(current, dict) and part in current:
-                current = current[part]
-            else:
-                found = False
-                break
 
-        if found and current not in (None, ""):
-            return current
+def _flatten(data: Any, prefix: str = "") -> dict[str, Any]:
+    flat: dict[str, Any] = {}
 
+    if isinstance(data, dict):
+        for key, value in data.items():
+            full = f"{prefix}.{key}" if prefix else str(key)
+            flat[_normalize_key(full)] = value
+            flat[_normalize_key(str(key))] = value
+            flat.update(_flatten(value, full))
+    elif isinstance(data, list):
+        for index, value in enumerate(data):
+            flat.update(_flatten(value, f"{prefix}.{index}" if prefix else str(index)))
+
+    return flat
+
+
+def _find(data: dict[str, Any], *keys: str) -> Any:
+    flat = _flatten(data)
+    for key in keys:
+        normalized = _normalize_key(key)
+        if normalized in flat and flat[normalized] not in (None, ""):
+            return flat[normalized]
     return None
 
 
 def _reader_state(data: dict[str, Any]) -> str | None:
-    value = _first(data, "readerOpen", "reader.open", "isReaderOpen", "open")
+    explicit = _find(data, "readerState", "reader.state", "state", "readingState")
+    if explicit is not None:
+        return str(explicit)
+
+    value = _find(data, "readerOpen", "reader.open", "isReaderOpen", "open", "readerVisible")
     if isinstance(value, bool):
         return "open" if value else "closed"
 
-    explicit = _first(data, "readerState", "reader.state", "state")
-    if explicit is not None:
-        return str(explicit)
+    if _currently_reading(data) or _page(data) is not None:
+        return "reading"
 
     return None
 
 
 def _currently_reading(data: dict[str, Any]) -> str | None:
-    return _first(
+    value = _find(
         data,
         "currentlyReading",
         "currentTitle",
@@ -57,39 +71,46 @@ def _currently_reading(data: dict[str, Any]) -> str | None:
         "reader.currentTitle",
         "reader.itemTitle",
         "reader.title",
+        "activeTitle",
+        "activeItem.title",
+        "document.title",
     )
+    return None if value is None else str(value)
 
 
 def _content_type(data: dict[str, Any]) -> str | None:
-    return _first(data, "contentType", "itemKind", "kind", "reader.contentType", "reader.itemKind")
+    value = _find(data, "contentType", "itemKind", "kind", "type", "reader.contentType", "reader.itemKind")
+    return None if value is None else str(value)
 
 
 def _page(data: dict[str, Any]) -> int | None:
-    return _int_or_none(_first(data, "page", "currentPage", "reader.page", "reader.currentPage"))
+    return _int_or_none(_find(data, "page", "currentPage", "pageNumber", "reader.page", "reader.currentPage"))
 
 
 def _page_count(data: dict[str, Any]) -> int | None:
-    return _int_or_none(_first(data, "pageCount", "totalPages", "reader.pageCount", "reader.totalPages"))
+    return _int_or_none(_find(data, "pageCount", "totalPages", "pages", "reader.pageCount", "reader.totalPages"))
 
 
 def _zoom(data: dict[str, Any]) -> float | int | None:
-    return _number_or_none(_first(data, "zoom", "reader.zoom"))
+    return _number_or_none(_find(data, "zoom", "zoomPercent", "reader.zoom", "reader.zoomPercent"))
 
 
 def _display_mode(data: dict[str, Any]) -> str | None:
-    return _first(data, "displayMode", "reader.displayMode")
+    value = _find(data, "displayMode", "pageMode", "reader.displayMode", "reader.pageMode")
+    return None if value is None else str(value)
 
 
 def _background(data: dict[str, Any]) -> str | None:
-    return _first(data, "background", "reader.background")
+    value = _find(data, "background", "backgroundName", "reader.background", "reader.backgroundName")
+    return None if value is None else str(value)
 
 
 def _background_brightness(data: dict[str, Any]) -> float | int | None:
-    return _number_or_none(_first(data, "backgroundBrightness", "reader.backgroundBrightness"))
+    return _number_or_none(_find(data, "backgroundBrightness", "brightness", "reader.backgroundBrightness", "reader.brightness"))
 
 
 def _fullscreen(data: dict[str, Any]) -> str | None:
-    value = _first(data, "fullscreen", "isFullscreen", "reader.fullscreen", "reader.isFullscreen")
+    value = _find(data, "fullscreen", "isFullscreen", "reader.fullscreen", "reader.isFullscreen", "fullScreen")
     if isinstance(value, bool):
         return "on" if value else "off"
     if value is not None:
@@ -98,7 +119,8 @@ def _fullscreen(data: dict[str, Any]) -> str | None:
 
 
 def _version(data: dict[str, Any]) -> str | None:
-    return _first(data, "version", "serverVersion", "guideVaultVersion")
+    value = _find(data, "version", "serverVersion", "guideVaultVersion", "appVersion", "applicationVersion", "buildVersion")
+    return None if value is None else str(value)
 
 
 def _int_or_none(value: Any) -> int | None:
@@ -128,73 +150,17 @@ class GuideVaultSensorDescription(SensorEntityDescription):
 
 
 SENSORS: tuple[GuideVaultSensorDescription, ...] = (
-    GuideVaultSensorDescription(
-        key="currently_reading",
-        name="Currently reading",
-        icon="mdi:book-open-page-variant",
-        value_fn=_currently_reading,
-    ),
-    GuideVaultSensorDescription(
-        key="reader_state",
-        name="Reader state",
-        icon="mdi:book-open",
-        value_fn=_reader_state,
-    ),
-    GuideVaultSensorDescription(
-        key="content_type",
-        name="Content type",
-        icon="mdi:shape",
-        value_fn=_content_type,
-    ),
-    GuideVaultSensorDescription(
-        key="page",
-        name="Page",
-        icon="mdi:file-document-outline",
-        value_fn=_page,
-    ),
-    GuideVaultSensorDescription(
-        key="page_count",
-        name="Page count",
-        icon="mdi:file-document-multiple-outline",
-        value_fn=_page_count,
-    ),
-    GuideVaultSensorDescription(
-        key="zoom",
-        name="Zoom",
-        icon="mdi:magnify",
-        value_fn=_zoom,
-    ),
-    GuideVaultSensorDescription(
-        key="display_mode",
-        name="Display mode",
-        icon="mdi:book-open-variant",
-        value_fn=_display_mode,
-    ),
-    GuideVaultSensorDescription(
-        key="background",
-        name="Background",
-        icon="mdi:image",
-        value_fn=_background,
-    ),
-    GuideVaultSensorDescription(
-        key="background_brightness",
-        name="Background brightness",
-        icon="mdi:brightness-6",
-        value_fn=_background_brightness,
-    ),
-    GuideVaultSensorDescription(
-        key="fullscreen",
-        name="Fullscreen",
-        icon="mdi:fullscreen",
-        value_fn=_fullscreen,
-    ),
-    GuideVaultSensorDescription(
-        key="version",
-        name="Version",
-        icon="mdi:information-outline",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=_version,
-    ),
+    GuideVaultSensorDescription(key="currently_reading", name="Currently reading", icon="mdi:book-open-page-variant", value_fn=_currently_reading),
+    GuideVaultSensorDescription(key="reader_state", name="Reader state", icon="mdi:book-open", value_fn=_reader_state),
+    GuideVaultSensorDescription(key="content_type", name="Content type", icon="mdi:shape", value_fn=_content_type),
+    GuideVaultSensorDescription(key="page", name="Page", icon="mdi:file-document-outline", value_fn=_page),
+    GuideVaultSensorDescription(key="page_count", name="Page count", icon="mdi:file-document-multiple-outline", value_fn=_page_count),
+    GuideVaultSensorDescription(key="zoom", name="Zoom", icon="mdi:magnify", value_fn=_zoom),
+    GuideVaultSensorDescription(key="display_mode", name="Display mode", icon="mdi:book-open-variant", value_fn=_display_mode),
+    GuideVaultSensorDescription(key="background", name="Background", icon="mdi:image", value_fn=_background),
+    GuideVaultSensorDescription(key="background_brightness", name="Background brightness", icon="mdi:brightness-6", value_fn=_background_brightness),
+    GuideVaultSensorDescription(key="fullscreen", name="Fullscreen", icon="mdi:fullscreen", value_fn=_fullscreen),
+    GuideVaultSensorDescription(key="version", name="Version", icon="mdi:information-outline", entity_category=EntityCategory.DIAGNOSTIC, value_fn=_version),
 )
 
 
@@ -237,9 +203,6 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
     @property
     def native_value(self) -> Any:
         """Return the sensor value."""
-        if not self.coordinator.last_update_success:
-            return None
-
         data = self.coordinator.data or {}
         if not isinstance(data, dict):
             return None
@@ -251,12 +214,12 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return useful status attributes for the main reading sensor."""
-        if self.entity_description.key != "currently_reading":
-            return None
-
+        """Return useful status attributes."""
         data = self.coordinator.data or {}
         if not isinstance(data, dict):
+            return None
+
+        if self.entity_description.key != "currently_reading":
             return None
 
         return {
@@ -269,5 +232,6 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
             "background": _background(data),
             "background_brightness": _background_brightness(data),
             "fullscreen": _fullscreen(data),
+            "version": _version(data),
             "status_endpoint": self.coordinator.client.status_url,
         }
