@@ -43,3 +43,8 @@ close_reader
   "backgroundBrightness": 0
 }
 ```
+
+
+## v0.5.1
+
+Fixes the `HomeAssistant object has no attribute helpers` refresh scheduling bug. Restores background controls and adds a `toggle_fullscreen` entity alias that sends `toggle_overlay`.

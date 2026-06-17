@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_call_later
 
 from .client import GuideVaultApiError, GuideVaultClient, GuideVaultClientConfig, GuideVaultConnectionError
 from .const import (
@@ -25,6 +26,8 @@ from .const import (
     ACTION_PAGE_LAST,
     ACTION_PAGE_NEXT,
     ACTION_PAGE_PREVIOUS,
+    ACTION_SET_BACKGROUND,
+    ACTION_SET_BACKGROUND_BRIGHTNESS,
     ACTION_SET_DISPLAY_MODE,
     ACTION_SET_ZOOM,
     ACTION_TOGGLE_OVERLAY,
@@ -54,6 +57,8 @@ from .const import (
     SERVICE_OPEN_MANUAL,
     SERVICE_OPEN_STRATEGY_GUIDE,
     SERVICE_PREVIOUS_PAGE,
+    SERVICE_SET_BACKGROUND,
+    SERVICE_SET_BACKGROUND_BRIGHTNESS,
     SERVICE_SET_DISPLAY_MODE,
     SERVICE_SET_ZOOM,
     SERVICE_STATUS,
@@ -115,6 +120,8 @@ SIMPLE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE})
 GO_TO_PAGE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("page"): vol.Coerce(int)})
 SET_ZOOM_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("zoom"): vol.Coerce(float)})
 SET_DISPLAY_MODE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("display_mode"): vol.In(["1 page", "2 page", "2 page adaptive"])})
+SET_BACKGROUND_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("background"): cv.string})
+SET_BACKGROUND_BRIGHTNESS_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("background_brightness"): vol.Coerce(float)})
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -223,6 +230,12 @@ def _register_services(hass: HomeAssistant) -> None:
     async def handle_set_display_mode(call: ServiceCall) -> None:
         await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_DISPLAY_MODE, "display_mode": call.data["display_mode"]})
 
+    async def handle_set_background(call: ServiceCall) -> None:
+        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_BACKGROUND, "background": call.data["background"]})
+
+    async def handle_set_background_brightness(call: ServiceCall) -> None:
+        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_BACKGROUND_BRIGHTNESS, "background_brightness": call.data["background_brightness"]})
+
     hass.services.async_register(DOMAIN, SERVICE_STATUS, handle_status, schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_COMMAND, handle_command, schema=COMMAND_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_OPEN_ITEM, handle_open_item, schema=OPEN_ITEM_SCHEMA)
@@ -241,6 +254,8 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_TOGGLE_OVERLAY, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
     # Compatibility alias. GuideVault confirmed command is toggle_overlay.
     hass.services.async_register(DOMAIN, SERVICE_TOGGLE_FULLSCREEN, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND, handle_set_background, schema=SET_BACKGROUND_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND_BRIGHTNESS, handle_set_background_brightness, schema=SET_BACKGROUND_BRIGHTNESS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLOSE_READER, lambda call: handle_simple(ACTION_CLOSE, call), schema=SIMPLE_SCHEMA)
 
 
@@ -259,11 +274,11 @@ async def async_send_command(hass: HomeAssistant, entry_id: str | None, payload:
 
         @callback
         def _delayed_refresh(_now):
-            coordinator.async_request_refresh()
+            hass.async_create_task(coordinator.async_request_refresh())
 
-        hass.helpers.event.async_call_later(0.20, _delayed_refresh)
-        hass.helpers.event.async_call_later(0.75, _delayed_refresh)
-        hass.helpers.event.async_call_later(1.50, _delayed_refresh)
+        async_call_later(hass, 0.20, _delayed_refresh)
+        async_call_later(hass, 0.75, _delayed_refresh)
+        async_call_later(hass, 1.50, _delayed_refresh)
 
 
 def _open_action_for_kind(item_kind: str | None) -> str:

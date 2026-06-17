@@ -19,7 +19,7 @@ command:
         text:
     action:
       name: Action
-      description: Confirmed GuideVault REST action.
+      description: GuideVault REST action.
       required: true
       selector:
         select:
@@ -40,6 +40,8 @@ command:
             - set_zoom
             - set_display_mode
             - toggle_overlay
+            - set_background
+            - set_background_brightness
             - close_reader
     item_title:
       name: Item title
@@ -88,6 +90,19 @@ command:
             - 1 page
             - 2 page
             - 2 page adaptive
+    background:
+      name: Background
+      required: false
+      selector:
+        text:
+    background_brightness:
+      name: Background brightness
+      required: false
+      selector:
+        number:
+          mode: slider
+          min: 0
+          max: 100
     payload:
       name: Extra payload
       required: false
@@ -317,6 +332,39 @@ toggle_fullscreen:
   name: Toggle fullscreen
   description: Compatibility alias. Sends GuideVault action toggle_overlay.
   fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+set_background:
+  name: Set background
+  description: Set the active GuideVault reader background. Requires GuideVault server-side support for action set_background.
+  fields:
+    background:
+      name: Background
+      required: true
+      selector:
+        text:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+set_background_brightness:
+  name: Set background brightness
+  description: Set the active GuideVault reader background brightness. Requires GuideVault server-side support for action set_background_brightness.
+  fields:
+    background_brightness:
+      name: Background brightness
+      required: true
+      selector:
+        number:
+          mode: slider
+          min: 0
+          max: 100
     entry_id:
       name: Entry ID
       required: false

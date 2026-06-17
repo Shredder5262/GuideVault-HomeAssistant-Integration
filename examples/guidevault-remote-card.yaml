@@ -39,11 +39,11 @@ cards:
       action: call-service
       service: guidevault.zoom_in
   - type: button
-    name: Overlay
+    name: Fullscreen
     icon: mdi:fullscreen
     tap_action:
       action: call-service
-      service: guidevault.toggle_overlay
+      service: guidevault.toggle_fullscreen
   - type: button
     name: Close
     icon: mdi:close-box-outline

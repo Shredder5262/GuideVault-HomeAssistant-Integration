@@ -65,6 +65,9 @@
       },
       "close_reader": {
         "name": "Close reader"
+      },
+      "toggle_fullscreen": {
+        "name": "Toggle fullscreen"
       }
     },
     "sensor": {
@@ -105,11 +108,17 @@
     "select": {
       "display_mode_select": {
         "name": "Display mode"
+      },
+      "background_select": {
+        "name": "Background"
       }
     },
     "number": {
       "zoom_control": {
         "name": "Zoom"
+      },
+      "background_brightness_control": {
+        "name": "Background brightness"
       }
     }
   }

@@ -88,3 +88,11 @@ Use HTTPS: unchecked
 ## Background controls
 
 Background and background brightness are reported as sensors if GuideVault status exposes them, but active controls were removed in v0.5.0 because those commands were not part of the confirmed working REST command list. Add them back after GuideVault exposes working actions for them.
+
+
+## v0.5.1
+
+- Fixed Home Assistant `hass.helpers` button press error by using `async_call_later`.
+- Added active `Toggle fullscreen` button entity as a compatibility alias for `toggle_overlay`.
+- Restored active background and background brightness controls.
+- Background controls send `set_background` and `set_background_brightness`; these still require matching GuideVault server-side command support.

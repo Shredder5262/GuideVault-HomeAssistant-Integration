@@ -45,6 +45,8 @@ SERVICE_SET_ZOOM = "set_zoom"
 SERVICE_SET_DISPLAY_MODE = "set_display_mode"
 SERVICE_TOGGLE_OVERLAY = "toggle_overlay"
 SERVICE_TOGGLE_FULLSCREEN = "toggle_fullscreen"
+SERVICE_SET_BACKGROUND = "set_background"
+SERVICE_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
 SERVICE_CLOSE_READER = "close_reader"
 
 # Confirmed working GuideVault REST command actions.
@@ -65,5 +67,11 @@ ACTION_SET_DISPLAY_MODE = "set_display_mode"
 ACTION_TOGGLE_OVERLAY = "toggle_overlay"
 ACTION_CLOSE = "close_reader"
 
+# Optional/future GuideVault reader commands. These are exposed so the HA controls are not disabled,
+# but they still require GuideVault server-side support to actually change the reader.
+ACTION_SET_BACKGROUND = "set_background"
+ACTION_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
+
 ITEM_KINDS = ["auto", "manual", "strategyGuide", "strategy_guide", "strategy-guide", "magazine"]
 DISPLAY_MODES = ["1 page", "2 page", "2 page adaptive"]
+DEFAULT_BACKGROUNDS = ["default"]
