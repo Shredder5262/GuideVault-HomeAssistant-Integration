@@ -1,0 +1,15 @@
+{
+  "domain": "guidevault",
+  "name": "GuideVault",
+  "after_dependencies": [],
+  "codeowners": [
+    "@Shredder5262"
+  ],
+  "config_flow": true,
+  "documentation": "https://guidevault.net",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Shredder5262/GuideVault/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

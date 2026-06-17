@@ -1,0 +1,59 @@
+{
+  "title": "GuideVault",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to GuideVault",
+        "description": "Enter the address of your GuideVault server.",
+        "data": {
+          "name": "Name",
+          "host": "Host or URL",
+          "port": "Port",
+          "ssl": "Use HTTPS",
+          "verify_ssl": "Verify SSL certificate",
+          "api_key": "API key",
+          "timeout": "Timeout"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to GuideVault. Check the host, port, SSL setting, and that GuideVault is running.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This GuideVault server is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "GuideVault options",
+        "data": {
+          "timeout": "Timeout"
+        }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "first_page": {
+        "name": "First page"
+      },
+      "previous_page": {
+        "name": "Previous page"
+      },
+      "next_page": {
+        "name": "Next page"
+      },
+      "last_page": {
+        "name": "Last page"
+      },
+      "toggle_fullscreen": {
+        "name": "Toggle fullscreen"
+      },
+      "close_reader": {
+        "name": "Close reader"
+      }
+    }
+  }
+}
