@@ -54,8 +54,14 @@
       "last_page": {
         "name": "Last page"
       },
-      "toggle_fullscreen": {
-        "name": "Toggle fullscreen"
+      "zoom_in": {
+        "name": "Zoom in"
+      },
+      "zoom_out": {
+        "name": "Zoom out"
+      },
+      "toggle_overlay": {
+        "name": "Toggle overlay"
       },
       "close_reader": {
         "name": "Close reader"
@@ -90,24 +96,18 @@
         "name": "Background brightness"
       },
       "fullscreen": {
-        "name": "Fullscreen"
+        "name": "Overlay / fullscreen"
       },
       "version": {
         "name": "Version"
       }
     },
     "select": {
-      "background_select": {
-        "name": "Background"
-      },
       "display_mode_select": {
         "name": "Display mode"
       }
     },
     "number": {
-      "background_brightness_control": {
-        "name": "Background brightness"
-      },
       "zoom_control": {
         "name": "Zoom"
       }

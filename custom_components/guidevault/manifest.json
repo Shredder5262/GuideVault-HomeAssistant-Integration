@@ -1,7 +1,6 @@
 {
   "domain": "guidevault",
   "name": "GuideVault",
-  "after_dependencies": [],
   "codeowners": [
     "@Shredder5262"
   ],
@@ -9,7 +8,7 @@
   "documentation": "https://guidevault.net",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/Shredder5262/GuideVault/issues",
+  "issue_tracker": "https://github.com/Shredder5262/GuideVault-HomeAssistant-Integration/issues",
   "requirements": [],
-  "version": "0.4.0"
+  "version": "0.5.0"
 }

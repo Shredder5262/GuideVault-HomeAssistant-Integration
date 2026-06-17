@@ -15,9 +15,5 @@ entities:
     name: Display mode
   - entity: sensor.guidevault_zoom
     name: Zoom
-  - entity: sensor.guidevault_background
-    name: Background
-  - entity: sensor.guidevault_background_brightness
-    name: Background brightness
   - entity: sensor.guidevault_fullscreen
-    name: Fullscreen
+    name: Overlay / fullscreen

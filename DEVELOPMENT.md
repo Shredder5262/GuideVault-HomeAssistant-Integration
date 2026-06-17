@@ -1,19 +1,39 @@
 # Development notes
 
-## Expected GuideVault endpoints
+## Expected GuideVault endpoint
 
 ```text
 POST /api/home-assistant/command
-GET  /api/home-assistant/status
 ```
 
-## Command payload
+## Confirmed command actions
+
+```text
+status
+open
+open_manual
+open_strategy_guide
+open_magazine
+next_page
+previous_page
+first_page
+last_page
+set_page
+zoom_in
+zoom_out
+set_zoom
+set_display_mode
+toggle_overlay
+close_reader
+```
+
+## Payload
 
 ```json
 {
-  "action": "open",
-  "itemTitle": "Super Mario 64",
-  "itemKind": "manual",
+  "action": "next_page",
+  "itemTitle": "",
+  "itemKind": "",
   "issueNumber": "",
   "volume": "",
   "page": 0,
@@ -21,31 +41,5 @@ GET  /api/home-assistant/status
   "displayMode": "",
   "background": "",
   "backgroundBrightness": 0
-}
-```
-
-## Local install test
-
-1. Copy `custom_components/guidevault` into `/config/custom_components/guidevault`.
-2. Restart Home Assistant.
-3. Add the integration from the UI.
-4. Test commands from Developer Tools > Actions.
-5. Confirm status sensors update from `/api/home-assistant/status`.
-
-
-## v0.3.0
-
-Adds select/number platforms and delayed status refresh after commands.
-
-
-## v0.4.0
-
-Uses legacy GuideVault REST action values and sends action aliases for compatibility:
-
-```json
-{
-  "action": "next",
-  "command_action": "next",
-  "commandAction": "next"
 }
 ```

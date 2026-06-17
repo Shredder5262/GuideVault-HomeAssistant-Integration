@@ -38,7 +38,6 @@ class GuideVaultConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
-        """Handle the initial step."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -46,10 +45,7 @@ class GuideVaultConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(_unique_id(normalized))
             self._abort_if_unique_id_configured()
 
-            session = async_get_clientsession(
-                self.hass,
-                verify_ssl=normalized.get(CONF_VERIFY_SSL, True),
-            )
+            session = async_get_clientsession(self.hass, verify_ssl=normalized.get(CONF_VERIFY_SSL, True))
             client = GuideVaultClient(
                 session,
                 GuideVaultClientConfig(
@@ -68,24 +64,16 @@ class GuideVaultConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.async_test_connection()
             except GuideVaultConnectionError:
                 errors["base"] = "cannot_connect"
-            except Exception:  # noqa: BLE001
+            except Exception:
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(
-                    title=normalized.get(CONF_NAME) or DEFAULT_NAME,
-                    data=normalized,
-                )
+                return self.async_create_entry(title=normalized.get(CONF_NAME) or DEFAULT_NAME, data=normalized)
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=_user_schema(user_input),
-            errors=errors,
-        )
+        return self.async_show_form(step_id="user", data_schema=_user_schema(user_input), errors=errors)
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        """Create the options flow."""
         return GuideVaultOptionsFlow(config_entry)
 
 
@@ -96,7 +84,6 @@ class GuideVaultOptionsFlow(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
@@ -107,31 +94,17 @@ class GuideVaultOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(
-                        CONF_TIMEOUT,
-                        default=options.get(CONF_TIMEOUT, data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=120)),
-                    vol.Optional(
-                        CONF_SCAN_INTERVAL,
-                        default=options.get(CONF_SCAN_INTERVAL, data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=2, max=300)),
-                    vol.Optional(
-                        CONF_COMMAND_ENDPOINT,
-                        default=options.get(CONF_COMMAND_ENDPOINT, data.get(CONF_COMMAND_ENDPOINT, COMMAND_ENDPOINT)),
-                    ): str,
-                    vol.Optional(
-                        CONF_STATUS_ENDPOINT,
-                        default=options.get(CONF_STATUS_ENDPOINT, data.get(CONF_STATUS_ENDPOINT, STATUS_ENDPOINT)),
-                    ): str,
+                    vol.Optional(CONF_TIMEOUT, default=options.get(CONF_TIMEOUT, data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT))): vol.All(vol.Coerce(int), vol.Range(min=1, max=120)),
+                    vol.Optional(CONF_SCAN_INTERVAL, default=options.get(CONF_SCAN_INTERVAL, data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))): vol.All(vol.Coerce(int), vol.Range(min=2, max=300)),
+                    vol.Optional(CONF_COMMAND_ENDPOINT, default=options.get(CONF_COMMAND_ENDPOINT, data.get(CONF_COMMAND_ENDPOINT, COMMAND_ENDPOINT))): str,
+                    vol.Optional(CONF_STATUS_ENDPOINT, default=options.get(CONF_STATUS_ENDPOINT, data.get(CONF_STATUS_ENDPOINT, STATUS_ENDPOINT))): str,
                 }
             ),
         )
 
 
 def _user_schema(user_input: dict[str, Any] | None = None) -> vol.Schema:
-    """Return user form schema."""
     user_input = user_input or {}
-
     return vol.Schema(
         {
             vol.Optional(CONF_NAME, default=user_input.get(CONF_NAME, DEFAULT_NAME)): str,
@@ -149,7 +122,6 @@ def _user_schema(user_input: dict[str, Any] | None = None) -> vol.Schema:
 
 
 def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
-    """Normalize config input."""
     normalized = dict(user_input)
     host = str(normalized[CONF_HOST]).strip().rstrip("/")
 
@@ -175,7 +147,6 @@ def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
 
 
 def _unique_id(data: dict[str, Any]) -> str:
-    """Return a stable unique ID."""
     scheme = "https" if data.get(CONF_SSL) else "http"
     port = data.get(CONF_PORT)
     return f"{scheme}://{data[CONF_HOST]}:{port}" if port else f"{scheme}://{data[CONF_HOST]}"

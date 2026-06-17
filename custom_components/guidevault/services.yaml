@@ -1,34 +1,53 @@
+status:
+  name: Refresh status
+  description: Refresh GuideVault status sensors.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
 command:
   name: Send command
   description: Send a raw GuideVault command payload.
   fields:
     entry_id:
       name: Entry ID
-      description: Optional Home Assistant config entry ID when multiple GuideVault instances are configured.
       required: false
       selector:
         text:
     action:
       name: Action
-      description: GuideVault REST action.
-      required: false
+      description: Confirmed GuideVault REST action.
+      required: true
       selector:
-        text:
-    command_action:
-      name: Command action
-      description: Backward-compatible alias for action.
-      required: false
-      selector:
-        text:
+        select:
+          custom_value: true
+          options:
+            - status
+            - open
+            - open_manual
+            - open_strategy_guide
+            - open_magazine
+            - next_page
+            - previous_page
+            - first_page
+            - last_page
+            - set_page
+            - zoom_in
+            - zoom_out
+            - set_zoom
+            - set_display_mode
+            - toggle_overlay
+            - close_reader
     item_title:
       name: Item title
-      description: Title of the manual, strategy guide, or magazine to open.
       required: false
       selector:
         text:
     item_kind:
       name: Item kind
-      description: GuideVault item kind.
       required: false
       selector:
         select:
@@ -36,31 +55,25 @@ command:
             - auto
             - manual
             - strategyGuide
-            - strategy_guide
-            - strategy-guide
             - magazine
     issue_number:
       name: Issue number
-      description: Magazine issue number.
       required: false
       selector:
         text:
     volume:
       name: Volume
-      description: Magazine volume.
       required: false
       selector:
         text:
     page:
       name: Page
-      description: Page number.
       required: false
       selector:
         number:
           mode: box
     zoom:
       name: Zoom
-      description: Reader zoom level.
       required: false
       selector:
         number:
@@ -68,7 +81,6 @@ command:
           step: 0.1
     display_mode:
       name: Display mode
-      description: Reader display mode.
       required: false
       selector:
         select:
@@ -76,43 +88,16 @@ command:
             - 1 page
             - 2 page
             - 2 page adaptive
-    background:
-      name: Background
-      description: Reader background name or value.
-      required: false
-      selector:
-        text:
-    background_brightness:
-      name: Background brightness
-      description: Reader background brightness.
-      required: false
-      selector:
-        number:
-          mode: slider
-          min: 0
-          max: 100
-    fullscreen:
-      name: Fullscreen
-      description: Optional fullscreen value when supported by GuideVault.
-      required: false
-      selector:
-        boolean:
     payload:
       name: Extra payload
-      description: Additional raw JSON fields to merge into the command payload.
       required: false
       selector:
         object:
 
 open_item:
   name: Open item
-  description: Open a manual, strategy guide, or magazine in GuideVault.
+  description: Open a GuideVault item using the correct open action for the selected item kind.
   fields:
-    entry_id:
-      name: Entry ID
-      required: false
-      selector:
-        text:
     item_title:
       name: Item title
       required: true
@@ -128,18 +113,14 @@ open_item:
             - auto
             - manual
             - strategyGuide
-            - strategy_guide
-            - strategy-guide
             - magazine
     issue_number:
       name: Issue number
-      description: Magazine issue number.
       required: false
       selector:
         text:
     volume:
       name: Volume
-      description: Magazine volume.
       required: false
       selector:
         text:
@@ -149,10 +130,70 @@ open_item:
       selector:
         number:
           mode: box
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+open_manual:
+  name: Open manual
+  description: Open a manual in GuideVault.
+  fields:
+    item_title:
+      name: Item title
+      required: true
+      selector:
+        text:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+open_strategy_guide:
+  name: Open strategy guide
+  description: Open a strategy guide in GuideVault.
+  fields:
+    item_title:
+      name: Item title
+      required: true
+      selector:
+        text:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+open_magazine:
+  name: Open magazine
+  description: Open a magazine issue in GuideVault.
+  fields:
+    item_title:
+      name: Item title
+      required: true
+      selector:
+        text:
+    issue_number:
+      name: Issue number
+      required: false
+      selector:
+        text:
+    volume:
+      name: Volume
+      required: false
+      selector:
+        text:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
 
 next_page:
   name: Next page
-  description: Turn to the next page in the active GuideVault reader.
+  description: Turn to the next page.
   fields:
     entry_id:
       name: Entry ID
@@ -162,7 +203,7 @@ next_page:
 
 previous_page:
   name: Previous page
-  description: Turn to the previous page in the active GuideVault reader.
+  description: Turn to the previous page.
   fields:
     entry_id:
       name: Entry ID
@@ -172,7 +213,7 @@ previous_page:
 
 first_page:
   name: First page
-  description: Jump to the first page in the active GuideVault reader.
+  description: Jump to the first page.
   fields:
     entry_id:
       name: Entry ID
@@ -182,7 +223,7 @@ first_page:
 
 last_page:
   name: Last page
-  description: Jump to the last page in the active GuideVault reader.
+  description: Jump to the last page.
   fields:
     entry_id:
       name: Entry ID
@@ -192,23 +233,23 @@ last_page:
 
 go_to_page:
   name: Go to page
-  description: Jump to a specific page in the active GuideVault reader.
+  description: Jump to a specific page using GuideVault action set_page.
   fields:
-    entry_id:
-      name: Entry ID
-      required: false
-      selector:
-        text:
     page:
       name: Page
       required: true
       selector:
         number:
           mode: box
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
 
-toggle_fullscreen:
-  name: Toggle fullscreen
-  description: Toggle fullscreen mode in GuideVault.
+zoom_in:
+  name: Zoom in
+  description: Zoom in.
   fields:
     entry_id:
       name: Entry ID
@@ -216,48 +257,20 @@ toggle_fullscreen:
       selector:
         text:
 
-set_background:
-  name: Set background
-  description: Set the active GuideVault reader background.
+zoom_out:
+  name: Zoom out
+  description: Zoom out.
   fields:
     entry_id:
       name: Entry ID
       required: false
       selector:
         text:
-    background:
-      name: Background
-      required: true
-      selector:
-        text:
-
-set_background_brightness:
-  name: Set background brightness
-  description: Set the active GuideVault reader background brightness.
-  fields:
-    entry_id:
-      name: Entry ID
-      required: false
-      selector:
-        text:
-    background_brightness:
-      name: Background brightness
-      required: true
-      selector:
-        number:
-          mode: slider
-          min: 0
-          max: 100
 
 set_zoom:
   name: Set zoom
   description: Set the active GuideVault reader zoom.
   fields:
-    entry_id:
-      name: Entry ID
-      required: false
-      selector:
-        text:
     zoom:
       name: Zoom
       required: true
@@ -265,16 +278,16 @@ set_zoom:
         number:
           mode: box
           step: 0.1
-
-set_display_mode:
-  name: Set display mode
-  description: Set the active GuideVault reader display mode.
-  fields:
     entry_id:
       name: Entry ID
       required: false
       selector:
         text:
+
+set_display_mode:
+  name: Set display mode
+  description: Set the active GuideVault reader display mode.
+  fields:
     display_mode:
       name: Display mode
       required: true
@@ -284,10 +297,35 @@ set_display_mode:
             - 1 page
             - 2 page
             - 2 page adaptive
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+toggle_overlay:
+  name: Toggle overlay
+  description: Toggle the GuideVault reader overlay.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+toggle_fullscreen:
+  name: Toggle fullscreen
+  description: Compatibility alias. Sends GuideVault action toggle_overlay.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
 
 close_reader:
   name: Close reader
-  description: Close the active GuideVault reader when supported by GuideVault.
+  description: Close the active GuideVault reader.
   fields:
     entry_id:
       name: Entry ID

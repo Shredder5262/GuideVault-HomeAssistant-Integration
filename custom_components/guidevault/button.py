@@ -16,15 +16,15 @@ from .const import (
     ACTION_PAGE_LAST,
     ACTION_PAGE_NEXT,
     ACTION_PAGE_PREVIOUS,
-    ACTION_TOGGLE_FULLSCREEN,
+    ACTION_TOGGLE_OVERLAY,
+    ACTION_ZOOM_IN,
+    ACTION_ZOOM_OUT,
     DOMAIN,
 )
 
 
 @dataclass(frozen=True, slots=True)
 class GuideVaultButtonDescription:
-    """Description of a GuideVault command button."""
-
     key: str
     name: str
     action: str
@@ -36,34 +36,21 @@ BUTTONS: tuple[GuideVaultButtonDescription, ...] = (
     GuideVaultButtonDescription("previous_page", "Previous page", ACTION_PAGE_PREVIOUS, "mdi:chevron-left"),
     GuideVaultButtonDescription("next_page", "Next page", ACTION_PAGE_NEXT, "mdi:chevron-right"),
     GuideVaultButtonDescription("last_page", "Last page", ACTION_PAGE_LAST, "mdi:page-last"),
-    GuideVaultButtonDescription("toggle_fullscreen", "Toggle fullscreen", ACTION_TOGGLE_FULLSCREEN, "mdi:fullscreen"),
+    GuideVaultButtonDescription("zoom_out", "Zoom out", ACTION_ZOOM_OUT, "mdi:magnify-minus-outline"),
+    GuideVaultButtonDescription("zoom_in", "Zoom in", ACTION_ZOOM_IN, "mdi:magnify-plus-outline"),
+    GuideVaultButtonDescription("toggle_overlay", "Toggle overlay", ACTION_TOGGLE_OVERLAY, "mdi:fullscreen"),
     GuideVaultButtonDescription("close_reader", "Close reader", ACTION_CLOSE, "mdi:close-box-outline"),
 )
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up GuideVault button entities."""
-    async_add_entities(
-        GuideVaultButton(hass, entry, description)
-        for description in BUTTONS
-    )
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+    async_add_entities(GuideVaultButton(hass, entry, description) for description in BUTTONS)
 
 
 class GuideVaultButton(ButtonEntity):
-    """GuideVault command button."""
-
     _attr_has_entity_name = True
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        description: GuideVaultButtonDescription,
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, description: GuideVaultButtonDescription) -> None:
         self._hass = hass
         self._entry = entry
         self._description = description
@@ -78,9 +65,4 @@ class GuideVaultButton(ButtonEntity):
         }
 
     async def async_press(self) -> None:
-        """Send the button command to GuideVault."""
-        await async_send_command(
-            self._hass,
-            self._entry.entry_id,
-            {"action": self._description.action},
-        )
+        await async_send_command(self._hass, self._entry.entry_id, {"action": self._description.action})

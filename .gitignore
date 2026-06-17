@@ -35,3 +35,15 @@ Thumbs.db
 *.zip
 dist/
 build/
+# Local GuideVault HA integration deployment artifacts
+Deploy-GuideVaultHomeAssistantIntegration.ps1
+GuideVault-HomeAssistant-Integration-v*/
+GuideVault-HomeAssistant-Integration-v*.zip
+# Local GuideVault HA integration deployment artifacts
+Deploy-GuideVaultHomeAssistantIntegration.ps1
+GuideVault-HomeAssistant-Integration-v*/
+GuideVault-HomeAssistant-Integration-v*.zip
+# Local GuideVault HA integration deployment artifacts
+Deploy-GuideVaultHomeAssistantIntegration.ps1
+GuideVault-HomeAssistant-Integration-v*/
+GuideVault-HomeAssistant-Integration-v*.zip

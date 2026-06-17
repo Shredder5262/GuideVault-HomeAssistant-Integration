@@ -1,5 +1,5 @@
 type: grid
-columns: 3
+columns: 4
 square: false
 cards:
   - type: button
@@ -27,11 +27,23 @@ cards:
       action: call-service
       service: guidevault.last_page
   - type: button
-    name: Fullscreen
+    name: Zoom -
+    icon: mdi:magnify-minus-outline
+    tap_action:
+      action: call-service
+      service: guidevault.zoom_out
+  - type: button
+    name: Zoom +
+    icon: mdi:magnify-plus-outline
+    tap_action:
+      action: call-service
+      service: guidevault.zoom_in
+  - type: button
+    name: Overlay
     icon: mdi:fullscreen
     tap_action:
       action: call-service
-      service: guidevault.toggle_fullscreen
+      service: guidevault.toggle_overlay
   - type: button
     name: Close
     icon: mdi:close-box-outline

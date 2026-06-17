@@ -23,7 +23,6 @@ def _normalize_key(value: str) -> str:
 
 def _flatten(data: Any, prefix: str = "") -> dict[str, Any]:
     flat: dict[str, Any] = {}
-
     if isinstance(data, dict):
         for key, value in data.items():
             full = f"{prefix}.{key}" if prefix else str(key)
@@ -33,7 +32,6 @@ def _flatten(data: Any, prefix: str = "") -> dict[str, Any]:
     elif isinstance(data, list):
         for index, value in enumerate(data):
             flat.update(_flatten(value, f"{prefix}.{index}" if prefix else str(index)))
-
     return flat
 
 
@@ -50,31 +48,16 @@ def _reader_state(data: dict[str, Any]) -> str | None:
     explicit = _find(data, "readerState", "reader.state", "state", "readingState")
     if explicit is not None:
         return str(explicit)
-
     value = _find(data, "readerOpen", "reader.open", "isReaderOpen", "open", "readerVisible")
     if isinstance(value, bool):
         return "open" if value else "closed"
-
     if _currently_reading(data) or _page(data) is not None:
         return "reading"
-
     return None
 
 
 def _currently_reading(data: dict[str, Any]) -> str | None:
-    value = _find(
-        data,
-        "currentlyReading",
-        "currentTitle",
-        "itemTitle",
-        "title",
-        "reader.currentTitle",
-        "reader.itemTitle",
-        "reader.title",
-        "activeTitle",
-        "activeItem.title",
-        "document.title",
-    )
+    value = _find(data, "currentlyReading", "currentTitle", "itemTitle", "title", "reader.currentTitle", "reader.itemTitle", "reader.title", "activeTitle", "activeItem.title", "document.title")
     return None if value is None else str(value)
 
 
@@ -99,16 +82,7 @@ def _display_mode(data: dict[str, Any]) -> str | None:
     value = _find(data, "displayMode", "pageMode", "reader.displayMode", "reader.pageMode")
     if value is None:
         return None
-
-    text = str(value).strip().lower().replace("_", " ").replace("-", " ")
-    if text in ("single", "one", "one page", "1", "1page", "1 page"):
-        return "1 page"
-    if text in ("double", "two", "two page", "two pages", "2", "2page", "2 page", "2 pages"):
-        return "2 page"
-    if text in ("adaptive", "two page adaptive", "two pages adaptive", "2 adaptive", "2pageadaptive", "2 page adaptive", "2 pages adaptive"):
-        return "2 page adaptive"
-
-    return str(value)
+    return _normalize_display_mode(value)
 
 
 def _background(data: dict[str, Any]) -> str | None:
@@ -120,8 +94,8 @@ def _background_brightness(data: dict[str, Any]) -> float | int | None:
     return _number_or_none(_find(data, "backgroundBrightness", "brightness", "reader.backgroundBrightness", "reader.brightness"))
 
 
-def _fullscreen(data: dict[str, Any]) -> str | None:
-    value = _find(data, "fullscreen", "isFullscreen", "reader.fullscreen", "reader.isFullscreen", "fullScreen")
+def _overlay(data: dict[str, Any]) -> str | None:
+    value = _find(data, "fullscreen", "isFullscreen", "reader.fullscreen", "reader.isFullscreen", "fullScreen", "overlay", "overlayVisible")
     if isinstance(value, bool):
         return "on" if value else "off"
     if value is not None:
@@ -132,6 +106,18 @@ def _fullscreen(data: dict[str, Any]) -> str | None:
 def _version(data: dict[str, Any]) -> str | None:
     value = _find(data, "version", "serverVersion", "guideVaultVersion", "appVersion", "applicationVersion", "buildVersion")
     return None if value is None else str(value)
+
+
+def _normalize_display_mode(value: Any) -> str:
+    text = str(value or "").strip()
+    low = text.lower().replace("_", " ").replace("-", " ")
+    if low in ("single", "one", "one page", "1", "1page", "1 page"):
+        return "1 page"
+    if low in ("double", "two", "two page", "two pages", "2", "2page", "2 page", "2 pages"):
+        return "2 page"
+    if low in ("adaptive", "two page adaptive", "two pages adaptive", "2 adaptive", "2pageadaptive", "2 page adaptive", "2 pages adaptive"):
+        return "2 page adaptive"
+    return text
 
 
 def _int_or_none(value: Any) -> int | None:
@@ -146,17 +132,11 @@ def _number_or_none(value: Any) -> float | int | None:
         number = float(value)
     except (TypeError, ValueError):
         return None
-
-    if number.is_integer():
-        return int(number)
-
-    return number
+    return int(number) if number.is_integer() else number
 
 
 @dataclass(frozen=True, slots=True)
 class GuideVaultSensorDescription(SensorEntityDescription):
-    """Description for a GuideVault sensor."""
-
     value_fn: Callable[[dict[str, Any]], Any] | None = None
 
 
@@ -170,36 +150,20 @@ SENSORS: tuple[GuideVaultSensorDescription, ...] = (
     GuideVaultSensorDescription(key="display_mode", name="Display mode", icon="mdi:book-open-variant", value_fn=_display_mode),
     GuideVaultSensorDescription(key="background", name="Background", icon="mdi:image", value_fn=_background),
     GuideVaultSensorDescription(key="background_brightness", name="Background brightness", icon="mdi:brightness-6", value_fn=_background_brightness),
-    GuideVaultSensorDescription(key="fullscreen", name="Fullscreen", icon="mdi:fullscreen", value_fn=_fullscreen),
+    GuideVaultSensorDescription(key="fullscreen", name="Overlay / fullscreen", icon="mdi:fullscreen", value_fn=_overlay),
     GuideVaultSensorDescription(key="version", name="Version", icon="mdi:information-outline", entity_category=EntityCategory.DIAGNOSTIC, value_fn=_version),
 )
 
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up GuideVault sensors."""
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator: GuideVaultDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATORS][entry.entry_id]
-
-    async_add_entities(
-        GuideVaultSensor(coordinator, entry, description)
-        for description in SENSORS
-    )
+    async_add_entities(GuideVaultSensor(coordinator, entry, description) for description in SENSORS)
 
 
 class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], SensorEntity):
-    """GuideVault status sensor."""
-
     _attr_has_entity_name = True
 
-    def __init__(
-        self,
-        coordinator: GuideVaultDataUpdateCoordinator,
-        entry: ConfigEntry,
-        description: GuideVaultSensorDescription,
-    ) -> None:
+    def __init__(self, coordinator: GuideVaultDataUpdateCoordinator, entry: ConfigEntry, description: GuideVaultSensorDescription) -> None:
         super().__init__(coordinator)
         self.entity_description = description
         self._entry = entry
@@ -213,26 +177,16 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
 
     @property
     def native_value(self) -> Any:
-        """Return the sensor value."""
         data = self.coordinator.data or {}
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) or self.entity_description.value_fn is None:
             return None
-
-        if self.entity_description.value_fn is None:
-            return None
-
         return self.entity_description.value_fn(data)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return useful status attributes."""
         data = self.coordinator.data or {}
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) or self.entity_description.key != "currently_reading":
             return None
-
-        if self.entity_description.key != "currently_reading":
-            return None
-
         return {
             "reader_state": _reader_state(data),
             "content_type": _content_type(data),
@@ -242,7 +196,7 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
             "display_mode": _display_mode(data),
             "background": _background(data),
             "background_brightness": _background_brightness(data),
-            "fullscreen": _fullscreen(data),
+            "overlay_or_fullscreen": _overlay(data),
             "version": _version(data),
             "status_endpoint": self.coordinator.client.status_url,
         }

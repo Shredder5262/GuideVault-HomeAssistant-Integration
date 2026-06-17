@@ -28,56 +28,42 @@ DATA_SERVICES_REGISTERED = "services_registered"
 COMMAND_ENDPOINT = "/api/home-assistant/command"
 STATUS_ENDPOINT = "/api/home-assistant/status"
 
+SERVICE_STATUS = "status"
 SERVICE_COMMAND = "command"
 SERVICE_OPEN_ITEM = "open_item"
+SERVICE_OPEN_MANUAL = "open_manual"
+SERVICE_OPEN_STRATEGY_GUIDE = "open_strategy_guide"
+SERVICE_OPEN_MAGAZINE = "open_magazine"
 SERVICE_NEXT_PAGE = "next_page"
 SERVICE_PREVIOUS_PAGE = "previous_page"
 SERVICE_FIRST_PAGE = "first_page"
 SERVICE_LAST_PAGE = "last_page"
 SERVICE_GO_TO_PAGE = "go_to_page"
-SERVICE_TOGGLE_FULLSCREEN = "toggle_fullscreen"
-SERVICE_SET_BACKGROUND = "set_background"
-SERVICE_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
+SERVICE_ZOOM_IN = "zoom_in"
+SERVICE_ZOOM_OUT = "zoom_out"
 SERVICE_SET_ZOOM = "set_zoom"
 SERVICE_SET_DISPLAY_MODE = "set_display_mode"
+SERVICE_TOGGLE_OVERLAY = "toggle_overlay"
+SERVICE_TOGGLE_FULLSCREEN = "toggle_fullscreen"
 SERVICE_CLOSE_READER = "close_reader"
 
+# Confirmed working GuideVault REST command actions.
+ACTION_STATUS = "status"
 ACTION_OPEN = "open"
-ACTION_PAGE_NEXT = "next"
-ACTION_PAGE_PREVIOUS = "previous"
-ACTION_PAGE_FIRST = "first"
-ACTION_PAGE_LAST = "last"
-ACTION_PAGE_GOTO = "page"
-ACTION_TOGGLE_FULLSCREEN = "fullscreen"
-ACTION_SET_BACKGROUND = "background"
-ACTION_SET_BACKGROUND_BRIGHTNESS = "backgroundBrightness"
-ACTION_SET_ZOOM = "zoom"
-ACTION_SET_DISPLAY_MODE = "displayMode"
-ACTION_CLOSE = "close"
+ACTION_OPEN_MANUAL = "open_manual"
+ACTION_OPEN_STRATEGY_GUIDE = "open_strategy_guide"
+ACTION_OPEN_MAGAZINE = "open_magazine"
+ACTION_PAGE_NEXT = "next_page"
+ACTION_PAGE_PREVIOUS = "previous_page"
+ACTION_PAGE_FIRST = "first_page"
+ACTION_PAGE_LAST = "last_page"
+ACTION_PAGE_GOTO = "set_page"
+ACTION_ZOOM_IN = "zoom_in"
+ACTION_ZOOM_OUT = "zoom_out"
+ACTION_SET_ZOOM = "set_zoom"
+ACTION_SET_DISPLAY_MODE = "set_display_mode"
+ACTION_TOGGLE_OVERLAY = "toggle_overlay"
+ACTION_CLOSE = "close_reader"
 
-ITEM_KINDS = [
-    "auto",
-    "manual",
-    "strategyGuide",
-    "strategy_guide",
-    "strategy-guide",
-    "magazine",
-]
-
-DEFAULT_BACKGROUNDS = [
-    "default",
-    "dark",
-    "black",
-    "gray",
-    "white",
-    "paper",
-    "sepia",
-    "wood",
-    "transparent",
-]
-
-DEFAULT_DISPLAY_MODES = [
-    "1 page",
-    "2 page",
-    "2 page adaptive",
-]
+ITEM_KINDS = ["auto", "manual", "strategyGuide", "strategy_guide", "strategy-guide", "magazine"]
+DISPLAY_MODES = ["1 page", "2 page", "2 page adaptive"]

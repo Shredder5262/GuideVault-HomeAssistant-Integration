@@ -20,6 +20,31 @@ class GuideVaultConnectionError(Exception):
     """Raised when GuideVault cannot be reached."""
 
 
+ACTION_ALIASES = {
+    # Earlier guessed names -> confirmed GuideVault REST names.
+    "next": "next_page",
+    "page_next": "next_page",
+    "previous": "previous_page",
+    "page_previous": "previous_page",
+    "first": "first_page",
+    "page_first": "first_page",
+    "last": "last_page",
+    "page_last": "last_page",
+    "page": "set_page",
+    "go_to_page": "set_page",
+    "displayMode": "set_display_mode",
+    "display_mode": "set_display_mode",
+    "fullscreen": "toggle_overlay",
+    "toggle_fullscreen": "toggle_overlay",
+    "close": "close_reader",
+    "manual": "open_manual",
+    "strategyGuide": "open_strategy_guide",
+    "strategy_guide": "open_strategy_guide",
+    "strategy-guide": "open_strategy_guide",
+    "magazine": "open_magazine",
+}
+
+
 @dataclass(slots=True)
 class GuideVaultClientConfig:
     """GuideVault client configuration."""
@@ -44,18 +69,11 @@ class GuideVaultClientConfig:
             hostname = parsed.hostname or parsed.netloc
             path = parsed.path.rstrip("/")
             port = parsed.port or self.port
-
-            if port:
-                netloc = f"{hostname}:{port}"
-            else:
-                netloc = hostname
-
+            netloc = f"{hostname}:{port}" if port else hostname
             return f"{scheme}://{netloc}{path}"
 
         scheme = "https" if self.ssl else "http"
-        if self.port:
-            return f"{scheme}://{host}:{self.port}"
-        return f"{scheme}://{host}"
+        return f"{scheme}://{host}:{self.port}" if self.port else f"{scheme}://{host}"
 
 
 class GuideVaultClient:
@@ -67,17 +85,14 @@ class GuideVaultClient:
 
     @property
     def base_url(self) -> str:
-        """Return the configured GuideVault base URL."""
         return self._config.base_url
 
     @property
     def command_url(self) -> str:
-        """Return the configured command URL."""
         return f"{self.base_url}{_normalize_endpoint(self._config.command_endpoint)}"
 
     @property
     def status_url(self) -> str:
-        """Return the configured status URL."""
         return f"{self.base_url}{_normalize_endpoint(self._config.status_endpoint)}"
 
     def _headers(self) -> dict[str, str]:
@@ -86,29 +101,21 @@ class GuideVaultClient:
             "Content-Type": "application/json",
             "User-Agent": "HomeAssistant-GuideVault",
         }
-
         if self._config.api_key:
             headers["Authorization"] = f"Bearer {self._config.api_key}"
-
+            headers["X-Api-Key"] = self._config.api_key
         return headers
 
     async def async_test_connection(self) -> None:
         """Test whether GuideVault can be reached."""
-        probes = (
-            _normalize_endpoint(self._config.status_endpoint),
-            "/api/health",
-            "/health",
-            "/",
-        )
-
+        probes = (_normalize_endpoint(self._config.status_endpoint), "/api/health", "/health", "/")
         last_error: Exception | str | None = None
 
         for path in probes:
-            url = f"{self.base_url}{path}"
             try:
                 async with asyncio.timeout(self._config.timeout):
                     async with self._session.get(
-                        url,
+                        f"{self.base_url}{path}",
                         headers=self._headers(),
                         ssl=self._config.verify_ssl,
                     ) as response:
@@ -118,26 +125,33 @@ class GuideVaultClient:
             except (TimeoutError, ClientError, OSError) as err:
                 last_error = err
 
-        raise GuideVaultConnectionError(
-            f"Could not reach GuideVault at {self.base_url}: {last_error}"
-        )
+        raise GuideVaultConnectionError(f"Could not reach GuideVault at {self.base_url}: {last_error}")
 
     async def async_status(self) -> dict[str, Any]:
-        """Read GuideVault status and enrich it with version info when possible."""
-        data = await self._async_get_json_or_text(self.status_url, fail_on_http_error=True)
+        """Read GuideVault status.
 
-        if not isinstance(data, dict):
-            data = {"ok": True, "value": data}
+        Preferred:
+          GET /api/home-assistant/status
 
-        if not _has_any_key(data, ("version", "serverVersion", "guideVaultVersion", "appVersion")):
+        Fallback:
+          POST /api/home-assistant/command
+          { "action": "status", ... }
+        """
+        try:
+            data = await self._async_get_json_or_text(self.status_url, fail_on_http_error=True)
+            result = data if isinstance(data, dict) else {"ok": True, "raw": data}
+        except (GuideVaultApiError, GuideVaultConnectionError):
+            fallback = await self._async_post_command_payload(build_guidevault_payload({"action": "status"}))
+            result = fallback if isinstance(fallback, dict) else {"ok": True, "raw": fallback}
+
+        if not _has_any_key(result, ("version", "serverVersion", "guideVaultVersion", "appVersion")):
             version = await self._async_read_version_fallback()
             if version:
-                data["version"] = version
+                result["version"] = version
 
-        return data
+        return result
 
     async def _async_read_version_fallback(self) -> str | None:
-        """Try common GuideVault/version endpoints without failing status."""
         for path in (
             "/api/home-assistant/info",
             "/api/home-assistant/version",
@@ -151,47 +165,32 @@ class GuideVaultClient:
                 value = await self._async_get_json_or_text(f"{self.base_url}{path}", fail_on_http_error=False)
             except (GuideVaultConnectionError, GuideVaultApiError):
                 continue
-
             version = _extract_version(value)
             if version:
                 return version
-
         return None
 
     async def _async_get_json_or_text(self, url: str, *, fail_on_http_error: bool) -> Any:
-        """Read a JSON endpoint, falling back to text."""
         try:
             async with asyncio.timeout(self._config.timeout):
-                async with self._session.get(
-                    url,
-                    headers=self._headers(),
-                    ssl=self._config.verify_ssl,
-                ) as response:
+                async with self._session.get(url, headers=self._headers(), ssl=self._config.verify_ssl) as response:
                     text = await response.text()
-
                     if response.status < 200 or response.status >= 300:
                         if fail_on_http_error:
-                            raise GuideVaultApiError(
-                                f"GuideVault status failed with HTTP {response.status}: {text}"
-                            )
+                            raise GuideVaultApiError(f"GuideVault status failed with HTTP {response.status}: {text}")
                         return None
-
-                    content_type = response.headers.get("Content-Type", "")
-                    if "application/json" in content_type:
+                    if "application/json" in response.headers.get("Content-Type", ""):
                         return await response.json()
-
                     return text
         except GuideVaultApiError:
             raise
         except (TimeoutError, ClientResponseError, ClientError, OSError) as err:
-            raise GuideVaultConnectionError(
-                f"Could not read GuideVault status: {err}"
-            ) from err
+            raise GuideVaultConnectionError(f"Could not read GuideVault status: {err}") from err
 
     async def async_command(self, payload: dict[str, Any]) -> Any:
-        """Send a command to GuideVault."""
-        command_payload = build_guidevault_payload(payload)
+        return await self._async_post_command_payload(build_guidevault_payload(payload))
 
+    async def _async_post_command_payload(self, command_payload: dict[str, Any]) -> Any:
         try:
             async with asyncio.timeout(self._config.timeout):
                 async with self._session.post(
@@ -201,79 +200,40 @@ class GuideVaultClient:
                     ssl=self._config.verify_ssl,
                 ) as response:
                     text = await response.text()
-
                     if response.status < 200 or response.status >= 300:
-                        raise GuideVaultApiError(
-                            f"GuideVault command failed with HTTP {response.status}: {text}"
-                        )
-
-                    content_type = response.headers.get("Content-Type", "")
-                    if "application/json" in content_type:
+                        raise GuideVaultApiError(f"GuideVault command failed with HTTP {response.status}: {text}")
+                    if "application/json" in response.headers.get("Content-Type", ""):
                         return await response.json()
-
                     return {"ok": True, "response": text}
         except GuideVaultApiError:
             raise
         except (TimeoutError, ClientResponseError, ClientError, OSError) as err:
-            raise GuideVaultConnectionError(
-                f"Could not send command to GuideVault: {err}"
-            ) from err
+            raise GuideVaultConnectionError(f"Could not send command to GuideVault: {err}") from err
 
 
 def build_guidevault_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Convert Home Assistant service data into GuideVault's REST payload."""
+    """Build the GuideVault REST command payload."""
     incoming = dict(payload)
-
     extra_payload = incoming.pop("payload", None)
     if isinstance(extra_payload, dict):
         incoming.update(extra_payload)
 
-    action = _first(
-        incoming,
-        "action",
-        "command_action",
-        "commandAction",
-    )
-
+    action = _first(incoming, "action", "command_action", "commandAction")
     if not action:
         raise GuideVaultApiError("A GuideVault action is required.")
 
-    item_kind = _first(incoming, "itemKind", "item_kind", "content_type") or ""
-    item_kind = _normalize_item_kind(item_kind)
-
-    # GuideVault's original Home Assistant REST command uses:
-    # action, itemTitle, itemKind, issueNumber, volume, page, zoom,
-    # displayMode, background, and backgroundBrightness.
-    #
-    # command_action / commandAction are included as compatibility aliases.
-    return _clean_payload(
-        {
-            "action": action,
-            "command_action": action,
-            "commandAction": action,
-            "itemTitle": _first(incoming, "itemTitle", "item_title", "title") or "",
-            "item_title": _first(incoming, "itemTitle", "item_title", "title") or "",
-            "itemKind": item_kind,
-            "item_kind": item_kind,
-            "issueNumber": _first(incoming, "issueNumber", "issue_number", "issue") or "",
-            "issue_number": _first(incoming, "issueNumber", "issue_number", "issue") or "",
-            "volume": _first(incoming, "volume") or "",
-            "page": _number(_first(incoming, "page"), 0),
-            "zoom": _number(_first(incoming, "zoom"), 0),
-            "displayMode": _first(incoming, "displayMode", "display_mode") or "",
-            "display_mode": _first(incoming, "displayMode", "display_mode") or "",
-            "background": _first(incoming, "background") or "",
-            "backgroundBrightness": _number(
-                _first(incoming, "backgroundBrightness", "background_brightness"),
-                0,
-            ),
-            "background_brightness": _number(
-                _first(incoming, "backgroundBrightness", "background_brightness"),
-                0,
-            ),
-            "fullscreen": _optional_bool(_first(incoming, "fullscreen")),
-        }
-    )
+    return {
+        "action": _normalize_action(action),
+        "itemTitle": _first(incoming, "itemTitle", "item_title", "title") or "",
+        "itemKind": _normalize_item_kind(_first(incoming, "itemKind", "item_kind", "content_type") or ""),
+        "issueNumber": _first(incoming, "issueNumber", "issue_number", "issue") or "",
+        "volume": _first(incoming, "volume") or "",
+        "page": _number(_first(incoming, "page"), 0),
+        "zoom": _number(_first(incoming, "zoom"), 0),
+        "displayMode": _normalize_display_mode(_first(incoming, "displayMode", "display_mode") or ""),
+        "background": _first(incoming, "background") or "",
+        "backgroundBrightness": _number(_first(incoming, "backgroundBrightness", "background_brightness"), 0),
+    }
 
 
 def _normalize_endpoint(endpoint: str) -> str:
@@ -283,12 +243,29 @@ def _normalize_endpoint(endpoint: str) -> str:
     return endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
 
+def _normalize_action(value: Any) -> str:
+    text = str(value or "").strip()
+    return ACTION_ALIASES.get(text, text)
+
+
 def _normalize_item_kind(value: Any) -> str:
     text = str(value or "").strip()
     if not text or text == "auto":
         return ""
     if text in ("strategy_guide", "strategy-guide", "strategy guide", "guide"):
         return "strategyGuide"
+    return text
+
+
+def _normalize_display_mode(value: Any) -> str:
+    text = str(value or "").strip()
+    low = text.lower().replace("_", " ").replace("-", " ")
+    if low in ("single", "one", "one page", "1", "1page", "1 page"):
+        return "1 page"
+    if low in ("double", "two", "two page", "two pages", "2", "2page", "2 page", "2 pages"):
+        return "2 page"
+    if low in ("adaptive", "two page adaptive", "two pages adaptive", "2 adaptive", "2pageadaptive", "2 page adaptive", "2 pages adaptive"):
+        return "2 page adaptive"
     return text
 
 
@@ -302,36 +279,11 @@ def _first(payload: dict[str, Any], *keys: str) -> Any:
 def _number(value: Any, default: int | float) -> int | float:
     if value is None or value == "":
         return default
-
     try:
         number = float(value)
     except (TypeError, ValueError):
         return default
-
-    if number.is_integer():
-        return int(number)
-
-    return number
-
-
-def _optional_bool(value: Any) -> bool | None:
-    if value is None or value == "":
-        return None
-
-    if isinstance(value, bool):
-        return value
-
-    text = str(value).strip().lower()
-    if text in ("true", "1", "yes", "on"):
-        return True
-    if text in ("false", "0", "no", "off"):
-        return False
-
-    return None
-
-
-def _clean_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in payload.items() if value is not None}
+    return int(number) if number.is_integer() else number
 
 
 def _has_any_key(data: dict[str, Any], keys: tuple[str, ...]) -> bool:
@@ -342,20 +294,16 @@ def _has_any_key(data: dict[str, Any], keys: tuple[str, ...]) -> bool:
 def _extract_version(value: Any) -> str | None:
     if value is None:
         return None
-
     if isinstance(value, str):
         text = value.strip()
         return text if text and len(text) < 80 and "<html" not in text.lower() else None
-
     if isinstance(value, dict):
         for key in ("version", "serverVersion", "guideVaultVersion", "appVersion"):
             item = value.get(key)
             if item not in (None, ""):
                 return str(item)
-
         for item in value.values():
             version = _extract_version(item)
             if version:
                 return version
-
     return None
