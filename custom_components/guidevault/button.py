@@ -27,7 +27,7 @@ class GuideVaultButtonDescription:
 
     key: str
     name: str
-    command_action: str
+    action: str
     icon: str
 
 
@@ -82,5 +82,5 @@ class GuideVaultButton(ButtonEntity):
         await async_send_command(
             self._hass,
             self._entry.entry_id,
-            {"command_action": self._description.command_action},
+            {"action": self._description.action},
         )

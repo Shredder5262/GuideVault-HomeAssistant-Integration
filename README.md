@@ -1,19 +1,26 @@
 # GuideVault Home Assistant Integration
 
-This is a custom Home Assistant integration for controlling a local GuideVault server.
+Home Assistant custom integration for controlling a local GuideVault server.
 
 ## Features
 
-- UI config flow: `Settings > Devices & services > Add integration > GuideVault`
-- Local GuideVault connection over HTTP or HTTPS
-- Optional API key support through `Authorization: Bearer <token>`
-- Reader control services
-- Button entities for common reader controls
+- UI config flow
 - HACS-ready repository structure
+- Local HTTP/HTTPS GuideVault connection
+- Optional API key support through `Authorization: Bearer <token>`
+- Reader control button entities
+- Status sensors for the active GuideVault reader
+- Services/actions that match GuideVault's existing REST command payload
 
 ## Install manually
 
-Copy the `custom_components/guidevault` folder into your Home Assistant config folder:
+Copy:
+
+```text
+custom_components/guidevault
+```
+
+to:
 
 ```text
 /config/custom_components/guidevault
@@ -31,58 +38,104 @@ Example GuideVault URL:
 http://192.168.1.10:5478
 ```
 
-## HACS install later
+## HACS install
 
-Publish this repository with the following structure:
-
-```text
-custom_components/guidevault/
-hacs.json
-README.md
-```
-
-Then in HACS:
-
-```text
-HACS > Integrations > Three dots > Custom repositories
-```
-
-Add the GitHub repository URL and select category:
+Add this GitHub repository to HACS as a custom repository of type:
 
 ```text
 Integration
 ```
 
-## Services
+## Status sensors
+
+The integration adds sensors for:
+
+- Currently reading
+- Reader state
+- Content type
+- Page
+- Page count
+- Zoom
+- Display mode
+- Background
+- Background brightness
+- Fullscreen
+- Version
+
+These sensors read:
+
+```text
+GET /api/home-assistant/status
+```
+
+If your GuideVault build does not expose that endpoint yet, the command buttons can still work, but status sensors will be unavailable until the server adds it.
+
+Recommended GuideVault status response:
+
+```json
+{
+  "ok": true,
+  "version": "1.0.0",
+  "readerOpen": true,
+  "currentTitle": "Super Mario 64",
+  "contentType": "manual",
+  "page": 12,
+  "pageCount": 64,
+  "zoom": 1.0,
+  "displayMode": "single",
+  "background": "dark",
+  "backgroundBrightness": 50,
+  "fullscreen": false
+}
+```
+
+## Command payload
+
+The integration sends GuideVault's existing REST command format:
+
+```json
+{
+  "action": "open",
+  "itemTitle": "Super Mario 64",
+  "itemKind": "manual",
+  "issueNumber": "",
+  "volume": "",
+  "page": 0,
+  "zoom": 0,
+  "displayMode": "",
+  "background": "",
+  "backgroundBrightness": 0
+}
+```
+
+## Services/actions
 
 ### `guidevault.open_item`
 
-Open a manual, strategy guide, or magazine.
+```yaml
+service: guidevault.open_item
+data:
+  item_title: "Super Mario 64"
+  item_kind: "manual"
+```
+
+Strategy guide:
 
 ```yaml
 service: guidevault.open_item
 data:
   item_title: "Super Mario 64"
-  content_type: "manual"
+  item_kind: "strategyGuide"
 ```
 
-Open a strategy guide:
-
-```yaml
-service: guidevault.open_item
-data:
-  item_title: "Super Mario 64"
-  content_type: "strategy_guide"
-```
-
-Open a magazine issue:
+Magazine issue:
 
 ```yaml
 service: guidevault.open_item
 data:
   item_title: "Nintendo Power"
-  content_type: "magazine"
-  issue: "1"
+  item_kind: "magazine"
+  issue_number: "1"
 ```
 
 ### Reader controls
@@ -117,7 +170,19 @@ service: guidevault.toggle_fullscreen
 service: guidevault.close_reader
 ```
 
-### `guidevault.set_background`
+### Reader settings
+
+```yaml
+service: guidevault.set_zoom
+data:
+  zoom: 1.25
+```
+
+```yaml
+service: guidevault.set_display_mode
+data:
+  display_mode: "single"
+```
 
 ```yaml
 service: guidevault.set_background
@@ -125,69 +190,52 @@ data:
   background: "dark"
 ```
 
-### `guidevault.command`
+```yaml
+service: guidevault.set_background_brightness
+data:
+  background_brightness: 50
+```
 
-Use this for raw GuideVault command payloads.
+### Raw command
+
+Use `guidevault.command` for the full REST payload.
 
 ```yaml
 service: guidevault.command
 data:
-  command_action: "open"
+  action: "open"
   item_title: "Super Mario 64"
-  content_type: "manual"
+  item_kind: "manual"
+  issue_number: ""
+  volume: ""
+  page: 0
+  zoom: 0
+  display_mode: ""
+  background: ""
+  background_brightness: 0
 ```
 
-## Dashboard example
+Backward-compatible aliases are accepted:
+
+- `command_action` -> `action`
+- `content_type` -> `itemKind`
+- `issue` -> `issueNumber`
+
+## Dashboard examples
 
 See:
 
 ```text
 examples/guidevault-remote-card.yaml
+examples/guidevault-status-card.yaml
 ```
 
-## Command mapping
+## If commands return 404
 
-The integration sends these `command_action` values to GuideVault:
-
-| Home Assistant service | GuideVault `command_action` |
-|---|---|
-| `guidevault.open_item` | `open` |
-| `guidevault.next_page` | `page_next` |
-| `guidevault.previous_page` | `page_previous` |
-| `guidevault.first_page` | `page_first` |
-| `guidevault.last_page` | `page_last` |
-| `guidevault.go_to_page` | `page` |
-| `guidevault.toggle_fullscreen` | `toggle_fullscreen` |
-| `guidevault.set_background` | `set_background` |
-| `guidevault.close_reader` | `close` |
-
-## Recommended GuideVault server endpoints
-
-This integration currently uses:
+Confirm the configured command endpoint in integration options. Default:
 
 ```text
-POST /api/home-assistant/command
+/api/home-assistant/command
 ```
 
-For better future Home Assistant entities, GuideVault should also expose:
-
-```text
-GET /api/home-assistant/status
-```
-
-Recommended status payload:
-
-```json
-{
-  "ok": true,
-  "version": "1.0.0",
-  "readerOpen": true,
-  "currentTitle": "Super Mario 64",
-  "contentType": "manual",
-  "page": 12,
-  "pageCount": 64,
-  "fullscreen": false
-}
-```
-
-That would allow a future version to add sensors such as current item, current page, reader state, and fullscreen state.
+A 404 usually means the GuideVault server build does not expose the endpoint, the base URL is wrong, or a reverse proxy is routing the request away from GuideVault.

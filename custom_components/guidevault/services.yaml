@@ -1,6 +1,6 @@
 command:
   name: Send command
-  description: Send a raw command payload to GuideVault.
+  description: Send a raw GuideVault command payload.
   fields:
     entry_id:
       name: Entry ID
@@ -8,10 +8,16 @@ command:
       required: false
       selector:
         text:
+    action:
+      name: Action
+      description: GuideVault REST action.
+      required: false
+      selector:
+        text:
     command_action:
       name: Command action
-      description: GuideVault command action, such as open, page_next, page_previous, page_first, page_last, toggle_fullscreen, set_background, or close.
-      required: true
+      description: Backward-compatible alias for action.
+      required: false
       selector:
         text:
     item_title:
@@ -20,21 +26,22 @@ command:
       required: false
       selector:
         text:
-    content_type:
-      name: Content type
-      description: Optional content type hint.
+    item_kind:
+      name: Item kind
+      description: GuideVault item kind.
       required: false
       selector:
         select:
           options:
             - auto
             - manual
+            - strategyGuide
             - strategy_guide
             - strategy-guide
             - magazine
-    issue:
-      name: Issue
-      description: Magazine issue number or issue text.
+    issue_number:
+      name: Issue number
+      description: Magazine issue number.
       required: false
       selector:
         text:
@@ -50,17 +57,39 @@ command:
       required: false
       selector:
         number:
-          min: 1
           mode: box
-    background:
-      name: Background
-      description: Background name or value for GuideVault.
+    zoom:
+      name: Zoom
+      description: Reader zoom level.
+      required: false
+      selector:
+        number:
+          mode: box
+          step: 0.1
+    display_mode:
+      name: Display mode
+      description: Reader display mode.
       required: false
       selector:
         text:
+    background:
+      name: Background
+      description: Reader background name or value.
+      required: false
+      selector:
+        text:
+    background_brightness:
+      name: Background brightness
+      description: Reader background brightness.
+      required: false
+      selector:
+        number:
+          mode: slider
+          min: 0
+          max: 100
     fullscreen:
       name: Fullscreen
-      description: Fullscreen toggle value when supported by GuideVault.
+      description: Optional fullscreen value when supported by GuideVault.
       required: false
       selector:
         boolean:
@@ -85,8 +114,8 @@ open_item:
       required: true
       selector:
         text:
-    content_type:
-      name: Content type
+    item_kind:
+      name: Item kind
       required: false
       default: auto
       selector:
@@ -94,12 +123,13 @@ open_item:
           options:
             - auto
             - manual
+            - strategyGuide
             - strategy_guide
             - strategy-guide
             - magazine
-    issue:
-      name: Issue
-      description: Magazine issue number or issue text.
+    issue_number:
+      name: Issue number
+      description: Magazine issue number.
       required: false
       selector:
         text:
@@ -109,6 +139,12 @@ open_item:
       required: false
       selector:
         text:
+    page:
+      name: Page
+      required: false
+      selector:
+        number:
+          mode: box
 
 next_page:
   name: Next page
@@ -164,7 +200,6 @@ go_to_page:
       required: true
       selector:
         number:
-          min: 1
           mode: box
 
 toggle_fullscreen:
@@ -188,6 +223,56 @@ set_background:
         text:
     background:
       name: Background
+      required: true
+      selector:
+        text:
+
+set_background_brightness:
+  name: Set background brightness
+  description: Set the active GuideVault reader background brightness.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    background_brightness:
+      name: Background brightness
+      required: true
+      selector:
+        number:
+          mode: slider
+          min: 0
+          max: 100
+
+set_zoom:
+  name: Set zoom
+  description: Set the active GuideVault reader zoom.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    zoom:
+      name: Zoom
+      required: true
+      selector:
+        number:
+          mode: box
+          step: 0.1
+
+set_display_mode:
+  name: Set display mode
+  description: Set the active GuideVault reader display mode.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    display_mode:
+      name: Display mode
       required: true
       selector:
         text:

@@ -12,7 +12,10 @@
           "ssl": "Use HTTPS",
           "verify_ssl": "Verify SSL certificate",
           "api_key": "API key",
-          "timeout": "Timeout"
+          "timeout": "Timeout",
+          "scan_interval": "Status refresh interval",
+          "command_endpoint": "Command endpoint",
+          "status_endpoint": "Status endpoint"
         }
       }
     },
@@ -29,7 +32,10 @@
       "init": {
         "title": "GuideVault options",
         "data": {
-          "timeout": "Timeout"
+          "timeout": "Timeout",
+          "scan_interval": "Status refresh interval",
+          "command_endpoint": "Command endpoint",
+          "status_endpoint": "Status endpoint"
         }
       }
     }
@@ -53,6 +59,41 @@
       },
       "close_reader": {
         "name": "Close reader"
+      }
+    },
+    "sensor": {
+      "currently_reading": {
+        "name": "Currently reading"
+      },
+      "reader_state": {
+        "name": "Reader state"
+      },
+      "content_type": {
+        "name": "Content type"
+      },
+      "page": {
+        "name": "Page"
+      },
+      "page_count": {
+        "name": "Page count"
+      },
+      "zoom": {
+        "name": "Zoom"
+      },
+      "display_mode": {
+        "name": "Display mode"
+      },
+      "background": {
+        "name": "Background"
+      },
+      "background_brightness": {
+        "name": "Background brightness"
+      },
+      "fullscreen": {
+        "name": "Fullscreen"
+      },
+      "version": {
+        "name": "Version"
       }
     }
   }
