@@ -140,8 +140,10 @@ class GuideVaultClient:
         """Try common GuideVault/version endpoints without failing status."""
         for path in (
             "/api/home-assistant/info",
+            "/api/home-assistant/version",
             "/api/info",
             "/api/system/info",
+            "/api/server/info",
             "/api/version",
             "/version",
         ):
@@ -239,22 +241,33 @@ def build_guidevault_payload(payload: dict[str, Any]) -> dict[str, Any]:
     item_kind = _first(incoming, "itemKind", "item_kind", "content_type") or ""
     item_kind = _normalize_item_kind(item_kind)
 
-    # commandAction is included as a compatibility alias. GuideVault builds that
-    # read only action will ignore it, while older command handlers can still
-    # bind it.
+    # GuideVault's original Home Assistant REST command uses:
+    # action, itemTitle, itemKind, issueNumber, volume, page, zoom,
+    # displayMode, background, and backgroundBrightness.
+    #
+    # command_action / commandAction are included as compatibility aliases.
     return _clean_payload(
         {
             "action": action,
+            "command_action": action,
             "commandAction": action,
             "itemTitle": _first(incoming, "itemTitle", "item_title", "title") or "",
+            "item_title": _first(incoming, "itemTitle", "item_title", "title") or "",
             "itemKind": item_kind,
+            "item_kind": item_kind,
             "issueNumber": _first(incoming, "issueNumber", "issue_number", "issue") or "",
+            "issue_number": _first(incoming, "issueNumber", "issue_number", "issue") or "",
             "volume": _first(incoming, "volume") or "",
             "page": _number(_first(incoming, "page"), 0),
             "zoom": _number(_first(incoming, "zoom"), 0),
             "displayMode": _first(incoming, "displayMode", "display_mode") or "",
+            "display_mode": _first(incoming, "displayMode", "display_mode") or "",
             "background": _first(incoming, "background") or "",
             "backgroundBrightness": _number(
+                _first(incoming, "backgroundBrightness", "background_brightness"),
+                0,
+            ),
+            "background_brightness": _number(
                 _first(incoming, "backgroundBrightness", "background_brightness"),
                 0,
             ),

@@ -330,9 +330,10 @@ async def async_send_command(
             coordinator.async_request_refresh()
 
         # GuideVault may update reader status just after the command response.
-        # A delayed refresh makes button presses and number/select controls feel
-        # more responsive in the Home Assistant UI.
-        hass.helpers.event.async_call_later(0.75, _delayed_refresh)
+        # Multiple delayed refreshes make button presses and number/select
+        # controls feel more responsive in the Home Assistant UI.
+        hass.helpers.event.async_call_later(0.25, _delayed_refresh)
+        hass.helpers.event.async_call_later(1.00, _delayed_refresh)
 
 
 def _get_client(hass: HomeAssistant, entry_id: str | None) -> GuideVaultClient:

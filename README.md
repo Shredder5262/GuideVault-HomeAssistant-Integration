@@ -263,3 +263,30 @@ Adds Home Assistant `select` and `number` entities for reader settings:
 - Zoom number control
 
 Status parsing is more flexible and now looks for several common GuideVault status field names. The integration also tries common version/info endpoints if `/api/home-assistant/status` does not include a version value.
+
+
+## v0.4.0 note
+
+Changes the default control action names to match the original GuideVault REST command style:
+
+| Control | Action sent |
+|---|---|
+| Next page | `next` |
+| Previous page | `previous` |
+| First page | `first` |
+| Last page | `last` |
+| Toggle fullscreen | `fullscreen` |
+| Zoom | `zoom` |
+| Background | `background` |
+| Background brightness | `backgroundBrightness` |
+| Display mode | `displayMode` |
+
+The integration now sends `action`, `command_action`, and `commandAction` in the payload for compatibility with old and new GuideVault handlers.
+
+Display mode options are limited to:
+
+- `1 page`
+- `2 page`
+- `2 page adaptive`
+
+Background options are read from the GuideVault status response when the server exposes installed/available backgrounds. If the status API does not expose installed backgrounds yet, Home Assistant can only show fallback options.

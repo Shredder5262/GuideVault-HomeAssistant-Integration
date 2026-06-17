@@ -36,3 +36,16 @@ GET  /api/home-assistant/status
 ## v0.3.0
 
 Adds select/number platforms and delayed status refresh after commands.
+
+
+## v0.4.0
+
+Uses legacy GuideVault REST action values and sends action aliases for compatibility:
+
+```json
+{
+  "action": "next",
+  "command_action": "next",
+  "commandAction": "next"
+}
+```

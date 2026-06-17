@@ -11,7 +11,7 @@ DEFAULT_NAME = "GuideVault"
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 5478
 DEFAULT_TIMEOUT = 10
-DEFAULT_SCAN_INTERVAL = 3
+DEFAULT_SCAN_INTERVAL = 2
 
 CONF_API_KEY = "api_key"
 CONF_SSL = "ssl"
@@ -43,16 +43,16 @@ SERVICE_SET_DISPLAY_MODE = "set_display_mode"
 SERVICE_CLOSE_READER = "close_reader"
 
 ACTION_OPEN = "open"
-ACTION_PAGE_NEXT = "page_next"
-ACTION_PAGE_PREVIOUS = "page_previous"
-ACTION_PAGE_FIRST = "page_first"
-ACTION_PAGE_LAST = "page_last"
+ACTION_PAGE_NEXT = "next"
+ACTION_PAGE_PREVIOUS = "previous"
+ACTION_PAGE_FIRST = "first"
+ACTION_PAGE_LAST = "last"
 ACTION_PAGE_GOTO = "page"
-ACTION_TOGGLE_FULLSCREEN = "toggle_fullscreen"
-ACTION_SET_BACKGROUND = "set_background"
-ACTION_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
-ACTION_SET_ZOOM = "set_zoom"
-ACTION_SET_DISPLAY_MODE = "set_display_mode"
+ACTION_TOGGLE_FULLSCREEN = "fullscreen"
+ACTION_SET_BACKGROUND = "background"
+ACTION_SET_BACKGROUND_BRIGHTNESS = "backgroundBrightness"
+ACTION_SET_ZOOM = "zoom"
+ACTION_SET_DISPLAY_MODE = "displayMode"
 ACTION_CLOSE = "close"
 
 ITEM_KINDS = [
@@ -77,9 +77,7 @@ DEFAULT_BACKGROUNDS = [
 ]
 
 DEFAULT_DISPLAY_MODES = [
-    "single",
-    "double",
-    "adaptive",
-    "fit_width",
-    "fit_height",
+    "1 page",
+    "2 page",
+    "2 page adaptive",
 ]

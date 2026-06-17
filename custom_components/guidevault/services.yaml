@@ -71,7 +71,11 @@ command:
       description: Reader display mode.
       required: false
       selector:
-        text:
+        select:
+          options:
+            - 1 page
+            - 2 page
+            - 2 page adaptive
     background:
       name: Background
       description: Reader background name or value.
@@ -275,7 +279,11 @@ set_display_mode:
       name: Display mode
       required: true
       selector:
-        text:
+        select:
+          options:
+            - 1 page
+            - 2 page
+            - 2 page adaptive
 
 close_reader:
   name: Close reader

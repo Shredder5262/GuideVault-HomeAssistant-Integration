@@ -97,7 +97,18 @@ def _zoom(data: dict[str, Any]) -> float | int | None:
 
 def _display_mode(data: dict[str, Any]) -> str | None:
     value = _find(data, "displayMode", "pageMode", "reader.displayMode", "reader.pageMode")
-    return None if value is None else str(value)
+    if value is None:
+        return None
+
+    text = str(value).strip().lower().replace("_", " ").replace("-", " ")
+    if text in ("single", "one", "one page", "1", "1page", "1 page"):
+        return "1 page"
+    if text in ("double", "two", "two page", "two pages", "2", "2page", "2 page", "2 pages"):
+        return "2 page"
+    if text in ("adaptive", "two page adaptive", "two pages adaptive", "2 adaptive", "2pageadaptive", "2 page adaptive", "2 pages adaptive"):
+        return "2 page adaptive"
+
+    return str(value)
 
 
 def _background(data: dict[str, Any]) -> str | None:
