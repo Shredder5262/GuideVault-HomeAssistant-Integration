@@ -1,4 +1,4 @@
-"""GuideVault integration for Home Assistant."""
+"""GuideVault Home Assistant custom integration."""
 
 from __future__ import annotations
 
@@ -7,303 +7,100 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT
-from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.event import async_call_later
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import aiohttp_client, config_validation as cv
 
-from .client import GuideVaultApiError, GuideVaultClient, GuideVaultClientConfig, GuideVaultConnectionError
-from .const import (
-    ACTION_CLOSE,
-    ACTION_OPEN,
-    ACTION_OPEN_MAGAZINE,
-    ACTION_OPEN_MANUAL,
-    ACTION_OPEN_STRATEGY_GUIDE,
-    ACTION_PAGE_FIRST,
-    ACTION_PAGE_GOTO,
-    ACTION_PAGE_LAST,
-    ACTION_PAGE_NEXT,
-    ACTION_PAGE_PREVIOUS,
-    ACTION_SET_BACKGROUND,
-    ACTION_SET_BACKGROUND_BRIGHTNESS,
-    ACTION_SET_DISPLAY_MODE,
-    ACTION_SET_ZOOM,
-    ACTION_TOGGLE_OVERLAY,
-    ACTION_ZOOM_IN,
-    ACTION_ZOOM_OUT,
-    CONF_API_KEY,
-    CONF_COMMAND_ENDPOINT,
-    CONF_SSL,
-    CONF_STATUS_ENDPOINT,
-    CONF_TIMEOUT,
-    CONF_VERIFY_SSL,
-    DATA_CLIENTS,
-    DATA_COORDINATORS,
-    DATA_SERVICES_REGISTERED,
-    DEFAULT_TIMEOUT,
-    DOMAIN,
-    ITEM_KINDS,
-    PLATFORMS,
-    SERVICE_CLOSE_READER,
-    SERVICE_COMMAND,
-    SERVICE_FIRST_PAGE,
-    SERVICE_GO_TO_PAGE,
-    SERVICE_LAST_PAGE,
-    SERVICE_NEXT_PAGE,
-    SERVICE_OPEN_ITEM,
-    SERVICE_OPEN_MAGAZINE,
-    SERVICE_OPEN_MANUAL,
-    SERVICE_OPEN_STRATEGY_GUIDE,
-    SERVICE_PREVIOUS_PAGE,
-    SERVICE_SET_BACKGROUND,
-    SERVICE_SET_BACKGROUND_BRIGHTNESS,
-    SERVICE_SET_DISPLAY_MODE,
-    SERVICE_SET_ZOOM,
-    SERVICE_STATUS,
-    SERVICE_TOGGLE_OVERLAY,
-    SERVICE_ZOOM_IN,
-    SERVICE_ZOOM_OUT,
-)
-from .coordinator import GuideVaultDataUpdateCoordinator
+from .api import GuideVaultApiClient
+from .const import CONF_BASE_URL, CONF_COMMAND_TOKEN, DOMAIN, PLATFORMS
+from .coordinator import GuideVaultCoordinator
 
-SERVICE_SCHEMA_BASE = {vol.Optional("entry_id"): cv.string}
+SERVICE_COMMAND = "command"
+SERVICE_OPEN_ITEM = "open_item"
 
-COMMAND_SCHEMA = vol.Schema(
+COMMAND_SERVICE_SCHEMA = vol.Schema(
     {
-        **SERVICE_SCHEMA_BASE,
         vol.Required("action"): cv.string,
         vol.Optional("item_title"): cv.string,
-        vol.Optional("itemTitle"): cv.string,
         vol.Optional("item_kind"): cv.string,
-        vol.Optional("itemKind"): cv.string,
-        vol.Optional("content_type"): vol.In(ITEM_KINDS),
         vol.Optional("issue_number"): cv.string,
-        vol.Optional("issueNumber"): cv.string,
-        vol.Optional("issue"): cv.string,
         vol.Optional("volume"): cv.string,
         vol.Optional("page"): vol.Coerce(int),
-        vol.Optional("zoom"): vol.Coerce(float),
+        vol.Optional("zoom"): vol.Coerce(int),
         vol.Optional("display_mode"): cv.string,
-        vol.Optional("displayMode"): cv.string,
         vol.Optional("background"): cv.string,
-        vol.Optional("background_brightness"): vol.Coerce(float),
-        vol.Optional("backgroundBrightness"): vol.Coerce(float),
-        vol.Optional("payload"): dict,
+        vol.Optional("background_brightness"): vol.Coerce(int),
     }
 )
 
-OPEN_ITEM_SCHEMA = vol.Schema(
+OPEN_ITEM_SERVICE_SCHEMA = vol.Schema(
     {
-        **SERVICE_SCHEMA_BASE,
         vol.Required("item_title"): cv.string,
-        vol.Optional("item_kind", default="auto"): vol.In(ITEM_KINDS),
+        vol.Optional("item_kind"): cv.string,
         vol.Optional("issue_number"): cv.string,
         vol.Optional("volume"): cv.string,
-        vol.Optional("page"): vol.Coerce(int),
     }
 )
 
-OPEN_TYPED_SCHEMA = vol.Schema(
-    {
-        **SERVICE_SCHEMA_BASE,
-        vol.Required("item_title"): cv.string,
-        vol.Optional("issue_number"): cv.string,
-        vol.Optional("volume"): cv.string,
-        vol.Optional("page"): vol.Coerce(int),
-    }
-)
 
-SIMPLE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE})
-GO_TO_PAGE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("page"): vol.Coerce(int)})
-SET_ZOOM_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("zoom"): vol.Coerce(float)})
-SET_DISPLAY_MODE_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("display_mode"): vol.In(["1 page", "2 page", "2 page adaptive"])})
-SET_BACKGROUND_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("background"): cv.string})
-SET_BACKGROUND_BRIGHTNESS_SCHEMA = vol.Schema({**SERVICE_SCHEMA_BASE, vol.Required("background_brightness"): vol.Coerce(float)})
+def _coordinator_for_call(hass: HomeAssistant) -> GuideVaultCoordinator:
+    entries = list(hass.data.get(DOMAIN, {}).values())
+    if not entries:
+        raise RuntimeError("GuideVault is not configured.")
+    return entries[0]
+
+
+def _service_payload(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "itemTitle": data.get("item_title", ""),
+        "itemKind": data.get("item_kind", ""),
+        "issueNumber": data.get("issue_number", ""),
+        "volume": data.get("volume", ""),
+        "page": data.get("page", 0),
+        "zoom": data.get("zoom", 0),
+        "displayMode": data.get("display_mode", ""),
+        "background": data.get("background", ""),
+        "backgroundBrightness": data.get("background_brightness", 0),
+    }
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GuideVault from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN].setdefault(DATA_CLIENTS, {})
-    hass.data[DOMAIN].setdefault(DATA_COORDINATORS, {})
-
-    session = async_get_clientsession(hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, True))
-
-    client = GuideVaultClient(
+    session = aiohttp_client.async_get_clientsession(hass)
+    api = GuideVaultApiClient(
         session,
-        GuideVaultClientConfig(
-            host=entry.data[CONF_HOST],
-            port=entry.data.get(CONF_PORT),
-            ssl=entry.data.get(CONF_SSL, False),
-            verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
-            api_key=entry.data.get(CONF_API_KEY),
-            timeout=entry.options.get(CONF_TIMEOUT, entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)),
-            command_endpoint=entry.options.get(CONF_COMMAND_ENDPOINT, entry.data.get(CONF_COMMAND_ENDPOINT)),
-            status_endpoint=entry.options.get(CONF_STATUS_ENDPOINT, entry.data.get(CONF_STATUS_ENDPOINT)),
-        ),
+        entry.data[CONF_BASE_URL],
+        entry.data.get(CONF_COMMAND_TOKEN, ""),
     )
+    coordinator = GuideVaultCoordinator(hass, api)
+    await coordinator.async_config_entry_first_refresh()
 
-    try:
-        await client.async_test_connection()
-    except GuideVaultConnectionError as err:
-        raise ConfigEntryNotReady(str(err)) from err
-
-    coordinator = GuideVaultDataUpdateCoordinator(hass, entry, client)
-    await coordinator.async_refresh()
-
-    hass.data[DOMAIN][DATA_CLIENTS][entry.entry_id] = client
-    hass.data[DOMAIN][DATA_COORDINATORS][entry.entry_id] = coordinator
-
-    if not hass.data[DOMAIN].get(DATA_SERVICES_REGISTERED):
-        _register_services(hass)
-        hass.data[DOMAIN][DATA_SERVICES_REGISTERED] = True
-
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    async def async_handle_command(call: ServiceCall) -> None:
+        coordinator_for_service = _coordinator_for_call(hass)
+        action = str(call.data["action"])
+        await coordinator_for_service.async_command(action, **_service_payload(dict(call.data)))
+
+    async def async_handle_open_item(call: ServiceCall) -> None:
+        coordinator_for_service = _coordinator_for_call(hass)
+        await coordinator_for_service.async_command("open", **_service_payload(dict(call.data)))
+
+    if not hass.services.has_service(DOMAIN, SERVICE_COMMAND):
+        hass.services.async_register(DOMAIN, SERVICE_COMMAND, async_handle_command, schema=COMMAND_SERVICE_SCHEMA)
+    if not hass.services.has_service(DOMAIN, SERVICE_OPEN_ITEM):
+        hass.services.async_register(DOMAIN, SERVICE_OPEN_ITEM, async_handle_open_item, schema=OPEN_ITEM_SERVICE_SCHEMA)
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload GuideVault."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data.get(DOMAIN, {}).get(DATA_CLIENTS, {}).pop(entry.entry_id, None)
-        hass.data.get(DOMAIN, {}).get(DATA_COORDINATORS, {}).pop(entry.entry_id, None)
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        if not hass.data[DOMAIN]:
+            hass.services.async_remove(DOMAIN, SERVICE_COMMAND)
+            hass.services.async_remove(DOMAIN, SERVICE_OPEN_ITEM)
+            hass.data.pop(DOMAIN, None)
     return unload_ok
-
-
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
-
-
-def _register_services(hass: HomeAssistant) -> None:
-    async def handle_status(call: ServiceCall) -> None:
-        coordinator = _get_coordinator(hass, call.data.get("entry_id"))
-        if coordinator is not None:
-            await coordinator.async_request_refresh()
-
-    async def handle_command(call: ServiceCall) -> None:
-        payload: dict[str, Any] = dict(call.data)
-        entry_id = payload.pop("entry_id", None)
-        await async_send_command(hass, entry_id, payload)
-
-    async def handle_open_item(call: ServiceCall) -> None:
-        item_kind = call.data.get("item_kind")
-        await async_send_command(
-            hass,
-            call.data.get("entry_id"),
-            {
-                "action": _open_action_for_kind(item_kind),
-                "item_title": call.data["item_title"],
-                "item_kind": item_kind,
-                "issue_number": call.data.get("issue_number"),
-                "volume": call.data.get("volume"),
-                "page": call.data.get("page"),
-            },
-        )
-
-    async def handle_open_typed(action: str, item_kind: str, call: ServiceCall) -> None:
-        await async_send_command(
-            hass,
-            call.data.get("entry_id"),
-            {
-                "action": action,
-                "item_title": call.data["item_title"],
-                "item_kind": item_kind,
-                "issue_number": call.data.get("issue_number"),
-                "volume": call.data.get("volume"),
-                "page": call.data.get("page"),
-            },
-        )
-
-    async def handle_simple(action: str, call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": action})
-
-    async def handle_go_to_page(call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_PAGE_GOTO, "page": call.data["page"]})
-
-    async def handle_set_zoom(call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_ZOOM, "zoom": call.data["zoom"]})
-
-    async def handle_set_display_mode(call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_DISPLAY_MODE, "display_mode": call.data["display_mode"]})
-
-    async def handle_set_background(call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_BACKGROUND, "background": call.data["background"]})
-
-    async def handle_set_background_brightness(call: ServiceCall) -> None:
-        await async_send_command(hass, call.data.get("entry_id"), {"action": ACTION_SET_BACKGROUND_BRIGHTNESS, "background_brightness": call.data["background_brightness"]})
-
-    hass.services.async_register(DOMAIN, SERVICE_STATUS, handle_status, schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_COMMAND, handle_command, schema=COMMAND_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_OPEN_ITEM, handle_open_item, schema=OPEN_ITEM_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_OPEN_MANUAL, lambda call: handle_open_typed(ACTION_OPEN_MANUAL, "manual", call), schema=OPEN_TYPED_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_OPEN_STRATEGY_GUIDE, lambda call: handle_open_typed(ACTION_OPEN_STRATEGY_GUIDE, "strategyGuide", call), schema=OPEN_TYPED_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_OPEN_MAGAZINE, lambda call: handle_open_typed(ACTION_OPEN_MAGAZINE, "magazine", call), schema=OPEN_TYPED_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_NEXT_PAGE, lambda call: handle_simple(ACTION_PAGE_NEXT, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_PREVIOUS_PAGE, lambda call: handle_simple(ACTION_PAGE_PREVIOUS, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_FIRST_PAGE, lambda call: handle_simple(ACTION_PAGE_FIRST, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_LAST_PAGE, lambda call: handle_simple(ACTION_PAGE_LAST, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_GO_TO_PAGE, handle_go_to_page, schema=GO_TO_PAGE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_ZOOM_IN, lambda call: handle_simple(ACTION_ZOOM_IN, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_ZOOM_OUT, lambda call: handle_simple(ACTION_ZOOM_OUT, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_SET_ZOOM, handle_set_zoom, schema=SET_ZOOM_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_SET_DISPLAY_MODE, handle_set_display_mode, schema=SET_DISPLAY_MODE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_TOGGLE_OVERLAY, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND, handle_set_background, schema=SET_BACKGROUND_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND_BRIGHTNESS, handle_set_background_brightness, schema=SET_BACKGROUND_BRIGHTNESS_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_CLOSE_READER, lambda call: handle_simple(ACTION_CLOSE, call), schema=SIMPLE_SCHEMA)
-
-
-async def async_send_command(hass: HomeAssistant, entry_id: str | None, payload: dict[str, Any]) -> None:
-    client = _get_client(hass, entry_id)
-    try:
-        await client.async_command(payload)
-    except GuideVaultConnectionError as err:
-        raise HomeAssistantError(f"GuideVault is unavailable: {err}") from err
-    except GuideVaultApiError as err:
-        raise HomeAssistantError(str(err)) from err
-
-    coordinator = _get_coordinator(hass, entry_id)
-    if coordinator is not None:
-        await coordinator.async_request_refresh()
-
-        @callback
-        def _delayed_refresh(_now):
-            hass.async_create_task(coordinator.async_request_refresh())
-
-        async_call_later(hass, 0.20, _delayed_refresh)
-        async_call_later(hass, 0.75, _delayed_refresh)
-        async_call_later(hass, 1.50, _delayed_refresh)
-
-
-def _open_action_for_kind(item_kind: str | None) -> str:
-    if item_kind == "manual":
-        return ACTION_OPEN_MANUAL
-    if item_kind in ("strategyGuide", "strategy_guide", "strategy-guide"):
-        return ACTION_OPEN_STRATEGY_GUIDE
-    if item_kind == "magazine":
-        return ACTION_OPEN_MAGAZINE
-    return ACTION_OPEN
-
-
-def _get_client(hass: HomeAssistant, entry_id: str | None) -> GuideVaultClient:
-    clients: dict[str, GuideVaultClient] = hass.data.get(DOMAIN, {}).get(DATA_CLIENTS, {})
-    if entry_id:
-        client = clients.get(entry_id)
-        if client is None:
-            raise HomeAssistantError(f"GuideVault config entry was not found: {entry_id}")
-        return client
-    if not clients:
-        raise HomeAssistantError("No GuideVault instance is configured.")
-    return next(iter(clients.values()))
-
-
-def _get_coordinator(hass: HomeAssistant, entry_id: str | None) -> GuideVaultDataUpdateCoordinator | None:
-    coordinators: dict[str, GuideVaultDataUpdateCoordinator] = hass.data.get(DOMAIN, {}).get(DATA_COORDINATORS, {})
-    if entry_id:
-        return coordinators.get(entry_id)
-    if not coordinators:
-        return None
-    return next(iter(coordinators.values()))

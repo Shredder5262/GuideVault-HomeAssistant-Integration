@@ -5,71 +5,27 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "guidevault"
-PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR, Platform.SELECT, Platform.NUMBER]
+NAME = "GuideVault"
+VERSION = "0.5.5"
 
-DEFAULT_NAME = "GuideVault"
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 5478
-DEFAULT_TIMEOUT = 10
-DEFAULT_SCAN_INTERVAL = 2
+CONF_BASE_URL = "base_url"
+CONF_COMMAND_TOKEN = "command_token"
 
-CONF_API_KEY = "api_key"
-CONF_SSL = "ssl"
-CONF_VERIFY_SSL = "verify_ssl"
-CONF_TIMEOUT = "timeout"
-CONF_COMMAND_ENDPOINT = "command_endpoint"
-CONF_STATUS_ENDPOINT = "status_endpoint"
-CONF_SCAN_INTERVAL = "scan_interval"
+DEFAULT_BASE_URL = "http://localhost:5478"
+DEFAULT_SCAN_INTERVAL_SECONDS = 5
 
-DATA_CLIENTS = "clients"
-DATA_COORDINATORS = "coordinators"
-DATA_SERVICES_REGISTERED = "services_registered"
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.SELECT,
+    Platform.NUMBER,
+]
 
-COMMAND_ENDPOINT = "/api/home-assistant/command"
-STATUS_ENDPOINT = "/api/home-assistant/status"
+DISPLAY_MODE_OPTIONS: dict[str, str] = {
+    "1 page": "single_page",
+    "2 page": "two_page",
+    "2 page adaptive": "adaptive_two_page",
+}
 
-SERVICE_STATUS = "status"
-SERVICE_COMMAND = "command"
-SERVICE_OPEN_ITEM = "open_item"
-SERVICE_OPEN_MANUAL = "open_manual"
-SERVICE_OPEN_STRATEGY_GUIDE = "open_strategy_guide"
-SERVICE_OPEN_MAGAZINE = "open_magazine"
-SERVICE_NEXT_PAGE = "next_page"
-SERVICE_PREVIOUS_PAGE = "previous_page"
-SERVICE_FIRST_PAGE = "first_page"
-SERVICE_LAST_PAGE = "last_page"
-SERVICE_GO_TO_PAGE = "go_to_page"
-SERVICE_ZOOM_IN = "zoom_in"
-SERVICE_ZOOM_OUT = "zoom_out"
-SERVICE_SET_ZOOM = "set_zoom"
-SERVICE_SET_DISPLAY_MODE = "set_display_mode"
-SERVICE_TOGGLE_OVERLAY = "toggle_overlay"
-SERVICE_SET_BACKGROUND = "set_background"
-SERVICE_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
-SERVICE_CLOSE_READER = "close_reader"
-
-# Confirmed working GuideVault REST command actions.
-ACTION_STATUS = "status"
-ACTION_OPEN = "open"
-ACTION_OPEN_MANUAL = "open_manual"
-ACTION_OPEN_STRATEGY_GUIDE = "open_strategy_guide"
-ACTION_OPEN_MAGAZINE = "open_magazine"
-ACTION_PAGE_NEXT = "next_page"
-ACTION_PAGE_PREVIOUS = "previous_page"
-ACTION_PAGE_FIRST = "first_page"
-ACTION_PAGE_LAST = "last_page"
-ACTION_PAGE_GOTO = "set_page"
-ACTION_ZOOM_IN = "zoom_in"
-ACTION_ZOOM_OUT = "zoom_out"
-ACTION_SET_ZOOM = "set_zoom"
-ACTION_SET_DISPLAY_MODE = "set_display_mode"
-ACTION_TOGGLE_OVERLAY = "toggle_overlay"
-ACTION_CLOSE = "close_reader"
-
-# Optional/future GuideVault reader commands. These require GuideVault server-side support.
-ACTION_SET_BACKGROUND = "set_background"
-ACTION_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
-
-ITEM_KINDS = ["auto", "manual", "strategyGuide", "strategy_guide", "strategy-guide", "magazine"]
-DISPLAY_MODES = ["1 page", "2 page", "2 page adaptive"]
-DEFAULT_BACKGROUNDS = ["default"]
+DISPLAY_MODE_LABELS: dict[str, str] = {value: key for key, value in DISPLAY_MODE_OPTIONS.items()}

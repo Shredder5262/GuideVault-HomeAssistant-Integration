@@ -2,101 +2,95 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Callable
 
-from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import async_send_command
-from .const import ACTION_SET_BACKGROUND_BRIGHTNESS, ACTION_SET_ZOOM, DATA_COORDINATORS, DOMAIN
-from .coordinator import GuideVaultDataUpdateCoordinator
+from .const import DOMAIN
+from .coordinator import GuideVaultCoordinator
+from .entity import GuideVaultEntity
+
+
+@dataclass(frozen=True)
+class GuideVaultNumberDescription:
+    key: str
+    name: str
+    action: str
+    payload_key: str
+    value_fn: Callable[[GuideVaultCoordinator], float]
+    min_value_fn: Callable[[GuideVaultCoordinator], float]
+    max_value_fn: Callable[[GuideVaultCoordinator], float]
+    step: float
+    icon: str
+
+
+NUMBERS = [
+    GuideVaultNumberDescription(
+        "page_number",
+        "Page",
+        "set_page",
+        "page",
+        lambda c: float(c.reader.get("page") or 0),
+        lambda c: 1,
+        lambda c: float(c.reader.get("pageCount") or 1),
+        1,
+        "mdi:file-document-outline",
+    ),
+    GuideVaultNumberDescription(
+        "zoom",
+        "Zoom",
+        "set_zoom",
+        "zoom",
+        lambda c: float(c.reader.get("zoom") or 100),
+        lambda c: 70,
+        lambda c: 145,
+        5,
+        "mdi:magnify",
+    ),
+    GuideVaultNumberDescription(
+        "background_brightness",
+        "Background Brightness",
+        "set_background_brightness",
+        "backgroundBrightness",
+        lambda c: float(c.reader.get("backgroundBrightness") or 72),
+        lambda c: 15,
+        lambda c: 100,
+        1,
+        "mdi:brightness-6",
+    ),
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
-    coordinator: GuideVaultDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATORS][entry.entry_id]
-    async_add_entities([
-        GuideVaultZoomNumber(hass, coordinator, entry),
-        GuideVaultBackgroundBrightnessNumber(hass, coordinator, entry),
-    ])
+    coordinator: GuideVaultCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([GuideVaultNumber(coordinator, description) for description in NUMBERS])
 
 
-class GuideVaultBaseNumber(CoordinatorEntity[GuideVaultDataUpdateCoordinator], NumberEntity):
-    _attr_has_entity_name = True
+class GuideVaultNumber(GuideVaultEntity, NumberEntity):
+    """GuideVault number entity."""
 
-    def __init__(self, hass: HomeAssistant, coordinator: GuideVaultDataUpdateCoordinator, entry: ConfigEntry, key: str, name: str, icon: str, minimum: float, maximum: float, step: float, mode: NumberMode) -> None:
-        super().__init__(coordinator)
-        self._hass = hass
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_{key}"
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_native_min_value = minimum
-        self._attr_native_max_value = maximum
-        self._attr_native_step = step
-        self._attr_mode = mode
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.title,
-            "manufacturer": "GuideVault",
-            "model": "GuideVault Server",
-        }
-
-
-class GuideVaultZoomNumber(GuideVaultBaseNumber):
-    def __init__(self, hass: HomeAssistant, coordinator: GuideVaultDataUpdateCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(hass, coordinator, entry, "zoom_control", "Zoom", "mdi:magnify", 10, 500, 5, NumberMode.BOX)
+    def __init__(self, coordinator: GuideVaultCoordinator, description: GuideVaultNumberDescription) -> None:
+        super().__init__(coordinator, description.key, description.name)
+        self.entity_description = description
+        self._attr_icon = description.icon
+        self._attr_native_step = description.step
 
     @property
-    def native_value(self) -> float | None:
-        data = self.coordinator.data or {}
-        value = _find_first(data, ("zoom", "reader.zoom", "zoomPercent", "reader.zoomPercent"))
-        return _float_or_none(value)
-
-    async def async_set_native_value(self, value: float) -> None:
-        await async_send_command(self._hass, self._entry.entry_id, {"action": ACTION_SET_ZOOM, "zoom": value})
-
-
-class GuideVaultBackgroundBrightnessNumber(GuideVaultBaseNumber):
-    def __init__(self, hass: HomeAssistant, coordinator: GuideVaultDataUpdateCoordinator, entry: ConfigEntry) -> None:
-        # Slider mode is easier to use on dashboards. The minimum is 1 instead
-        # of 0 to avoid Home Assistant opening the more-info panel when an
-        # inline slider is dragged all the way left.
-        super().__init__(hass, coordinator, entry, "background_brightness_control", "Background brightness", "mdi:brightness-6", 1, 100, 1, NumberMode.SLIDER)
+    def native_value(self) -> float:
+        return self.entity_description.value_fn(self.coordinator)
 
     @property
-    def native_value(self) -> float | None:
-        data = self.coordinator.data or {}
-        value = _find_first(data, ("backgroundBrightness", "reader.backgroundBrightness", "brightness", "reader.brightness"))
-        number = _float_or_none(value)
-        return 100 if number is None else number
+    def native_min_value(self) -> float:
+        return self.entity_description.min_value_fn(self.coordinator)
+
+    @property
+    def native_max_value(self) -> float:
+        return max(self.native_min_value, self.entity_description.max_value_fn(self.coordinator))
 
     async def async_set_native_value(self, value: float) -> None:
-        await async_send_command(self._hass, self._entry.entry_id, {"action": ACTION_SET_BACKGROUND_BRIGHTNESS, "background_brightness": value})
-
-
-def _find_first(data: Any, paths: tuple[str, ...]) -> Any:
-    for path in paths:
-        value = _get_path(data, path)
-        if value not in (None, ""):
-            return value
-    return None
-
-
-def _get_path(data: Any, path: str) -> Any:
-    current = data
-    for part in path.split("."):
-        if isinstance(current, dict) and part in current:
-            current = current[part]
-        else:
-            return None
-    return current
-
-
-def _float_or_none(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+        payload: dict[str, Any] = {self.entity_description.payload_key: int(round(value))}
+        await self.coordinator.async_command(self.entity_description.action, **payload)

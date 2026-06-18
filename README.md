@@ -1,120 +1,24 @@
-# GuideVault Home Assistant Integration
+# GuideVault Home Assistant Integration v0.5.5
 
-Home Assistant custom integration for controlling a local GuideVault server.
+This custom integration reads GuideVault's `/api/home-assistant/status` endpoint and queues reader commands through `/api/home-assistant/command`.
 
-## v0.5.0 correction
+## New in v0.5.5
 
-This release uses only the GuideVault REST command actions that were confirmed working:
+- Adds a **Toggle Fullscreen** button entity that sends `toggle_fullscreen`.
+- Adds a **Reader Background** select entity populated from GuideVault's installed server-side background catalog.
+- Adds **Next Background** and **Previous Background** button entities.
+- Adds a **Background Brightness** number entity.
+- Adds sensors/attributes for current background, available backgrounds, and fullscreen state.
 
-- `status`
-- `open`
-- `open_manual`
-- `open_strategy_guide`
-- `open_magazine`
-- `next_page`
-- `previous_page`
-- `first_page`
-- `last_page`
-- `set_page`
-- `zoom_in`
-- `zoom_out`
-- `set_zoom`
-- `set_display_mode`
-- `toggle_overlay`
-- `close_reader`
+## Install
 
-The integration sends the original GuideVault REST payload shape:
+Copy `custom_components/guidevault` into your Home Assistant `custom_components` directory, restart Home Assistant, then add the integration from Settings > Devices & services.
 
-```json
-{
-  "action": "next_page",
-  "itemTitle": "",
-  "itemKind": "",
-  "issueNumber": "",
-  "volume": "",
-  "page": 0,
-  "zoom": 0,
-  "displayMode": "",
-  "background": "",
-  "backgroundBrightness": 0
-}
-```
+Configure:
 
-## Features
+- GuideVault URL, for example `http://192.168.1.10:5478`
+- GuideVault command token from GuideVault Settings > Server > Integrations > Home Assistant
 
-- UI config flow
-- HACS-ready repository structure
-- Optional API key support through both `Authorization: Bearer <token>` and `X-Api-Key`
-- Reader control button entities
-- Status sensors for the active GuideVault reader
-- Display mode select: `1 page`, `2 page`, `2 page adaptive`
-- Zoom number entity
-- Raw command service for direct GuideVault action testing
+## Important
 
-## Install manually
-
-Copy:
-
-```text
-custom_components/guidevault
-```
-
-to:
-
-```text
-/config/custom_components/guidevault
-```
-
-Restart Home Assistant, then add the integration from:
-
-```text
-Settings > Devices & services > Add integration > GuideVault
-```
-
-Example GuideVault URL:
-
-```text
-http://192.168.1.20:5478
-```
-
-or:
-
-```text
-Host or URL: 192.168.1.20
-Port: 5478
-Use HTTPS: unchecked
-```
-
-## Background controls
-
-Background and background brightness are active controls. Background selection requires GuideVault to report installed background names in the status payload. Background brightness sends `set_background_brightness`.
-
-
-## v0.5.1
-
-- Fixed Home Assistant `hass.helpers` button press error by using `async_call_later`.
-- Fixed a temporary fullscreen compatibility alias; later removed in v0.5.2/v0.5.3 because GuideVault does not expose a real fullscreen command.
-- Restored active background and background brightness controls.
-- Background controls send `set_background` and `set_background_brightness`; these still require matching GuideVault server-side command support.
-
-
-## v0.5.2
-
-- Removed the broken Toggle fullscreen button entity. Use Toggle overlay instead.
-- Display mode defaults to `2 page` when GuideVault status does not report a value.
-- Background selector recursively searches nested status payloads for background lists and filters `unknown`/`unavailable`.
-- Removed redundant background/background brightness sensors; the select and number entities are the active state/control surfaces.
-- Reordered the remote card so Close reader sits with the other reader buttons.
-
-## v0.5.3
-
-- Restored Background brightness as a slider.
-- Set Background brightness slider range to 1-100 to avoid the Home Assistant zero-drag more-info edge case.
-- Removed the leftover `toggle_fullscreen` service definition and fullscreen action aliases.
-- Clarified that background options require GuideVault status to expose installed backgrounds.
-
-## GuideVault status payload notes
-
-The Background selector can only show installed backgrounds when GuideVault returns them in the Home Assistant status payload, for example `availableBackgrounds`, `backgrounds`, or `reader.availableBackgrounds`. If the status payload only includes reader state and does not include a background list, Home Assistant will only show the safe fallback option `default`.
-
-The Background brightness control is a slider from 1 to 100. The lower bound intentionally avoids 0 because some Home Assistant dashboards open the entity details panel when an inline slider is dragged completely left.
+The installed background dropdown needs GuideVault 0.9.215 or newer so `/api/home-assistant/status` returns `availableBackgrounds`.
