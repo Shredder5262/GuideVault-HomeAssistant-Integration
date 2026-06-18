@@ -89,3 +89,107 @@ open_item:
       required: false
       selector:
         text:
+
+first_page:
+  name: First page
+  description: Move the active GuideVault reader to the first page.
+
+previous_page:
+  name: Previous page
+  description: Move the active GuideVault reader to the previous page.
+
+next_page:
+  name: Next page
+  description: Move the active GuideVault reader to the next page.
+
+last_page:
+  name: Last page
+  description: Move the active GuideVault reader to the last page.
+
+toggle_overlay:
+  name: Toggle overlay
+  description: Toggle the GuideVault reader overlay/settings shelf.
+
+toggle_fullscreen:
+  name: Toggle fullscreen
+  description: Toggle fullscreen mode in the GuideVault reader.
+
+close_reader:
+  name: Close reader
+  description: Close the active GuideVault reader and return to the library.
+
+zoom_in:
+  name: Zoom in
+  description: Increase the GuideVault reader zoom.
+
+zoom_out:
+  name: Zoom out
+  description: Decrease the GuideVault reader zoom.
+
+next_background:
+  name: Next background
+  description: Move to the next installed GuideVault reader background.
+
+previous_background:
+  name: Previous background
+  description: Move to the previous installed GuideVault reader background.
+
+set_page:
+  name: Set page
+  description: Move the active GuideVault reader to a specific page.
+  fields:
+    page:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+set_zoom:
+  name: Set zoom
+  description: Set the GuideVault reader zoom percentage.
+  fields:
+    zoom:
+      required: true
+      selector:
+        number:
+          min: 70
+          max: 145
+          step: 5
+          mode: slider
+
+set_display_mode:
+  name: Set display mode
+  description: Set the GuideVault reader display mode.
+  fields:
+    display_mode:
+      required: true
+      selector:
+        select:
+          options:
+            - single_page
+            - two_page
+            - adaptive_two_page
+
+set_background:
+  name: Set background
+  description: Set the GuideVault reader background by installed background name.
+  fields:
+    background:
+      required: true
+      selector:
+        text:
+
+set_background_brightness:
+  name: Set background brightness
+  description: Set the GuideVault reader background brightness.
+  fields:
+    background_brightness:
+      required: true
+      selector:
+        number:
+          min: 15
+          max: 100
+          step: 1
+          mode: slider

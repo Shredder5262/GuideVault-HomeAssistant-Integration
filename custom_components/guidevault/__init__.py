@@ -11,11 +11,23 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
 from .api import GuideVaultApiClient
-from .const import CONF_BASE_URL, CONF_COMMAND_TOKEN, DOMAIN, PLATFORMS
+from .const import COMMAND_ACTIONS, CONF_BASE_URL, CONF_COMMAND_TOKEN, DOMAIN, PLATFORMS
 from .coordinator import GuideVaultCoordinator
 
 SERVICE_COMMAND = "command"
 SERVICE_OPEN_ITEM = "open_item"
+
+# Explicit one-shot services. These mirror the button entities so the controls
+# remain available even when Home Assistant hides, disables, or delays entity
+# registry creation for a platform after an update.
+SERVICE_ACTIONS = {
+    **COMMAND_ACTIONS,
+    "set_page": "set_page",
+    "set_zoom": "set_zoom",
+    "set_display_mode": "set_display_mode",
+    "set_background": "set_background",
+    "set_background_brightness": "set_background_brightness",
+}
 
 COMMAND_SERVICE_SCHEMA = vol.Schema(
     {
@@ -41,6 +53,13 @@ OPEN_ITEM_SERVICE_SCHEMA = vol.Schema(
     }
 )
 
+PAGE_SERVICE_SCHEMA = vol.Schema({vol.Required("page"): vol.Coerce(int)})
+ZOOM_SERVICE_SCHEMA = vol.Schema({vol.Required("zoom"): vol.Coerce(int)})
+DISPLAY_MODE_SERVICE_SCHEMA = vol.Schema({vol.Required("display_mode"): cv.string})
+BACKGROUND_SERVICE_SCHEMA = vol.Schema({vol.Required("background"): cv.string})
+BRIGHTNESS_SERVICE_SCHEMA = vol.Schema({vol.Required("background_brightness"): vol.Coerce(int)})
+EMPTY_SERVICE_SCHEMA = vol.Schema({})
+
 
 def _coordinator_for_call(hass: HomeAssistant) -> GuideVaultCoordinator:
     entries = list(hass.data.get(DOMAIN, {}).values())
@@ -50,17 +69,40 @@ def _coordinator_for_call(hass: HomeAssistant) -> GuideVaultCoordinator:
 
 
 def _service_payload(data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "itemTitle": data.get("item_title", ""),
-        "itemKind": data.get("item_kind", ""),
-        "issueNumber": data.get("issue_number", ""),
-        "volume": data.get("volume", ""),
-        "page": data.get("page", 0),
-        "zoom": data.get("zoom", 0),
-        "displayMode": data.get("display_mode", ""),
-        "background": data.get("background", ""),
-        "backgroundBrightness": data.get("background_brightness", 0),
-    }
+    payload: dict[str, Any] = {}
+    if "item_title" in data:
+        payload["itemTitle"] = data.get("item_title", "")
+    if "item_kind" in data:
+        payload["itemKind"] = data.get("item_kind", "")
+    if "issue_number" in data:
+        payload["issueNumber"] = data.get("issue_number", "")
+    if "volume" in data:
+        payload["volume"] = data.get("volume", "")
+    if "page" in data:
+        payload["page"] = data.get("page")
+    if "zoom" in data:
+        payload["zoom"] = data.get("zoom")
+    if "display_mode" in data:
+        payload["displayMode"] = data.get("display_mode", "")
+    if "background" in data:
+        payload["background"] = data.get("background", "")
+    if "background_brightness" in data:
+        payload["backgroundBrightness"] = data.get("background_brightness")
+    return payload
+
+
+def _schema_for_service(service_name: str) -> vol.Schema:
+    if service_name == "set_page":
+        return PAGE_SERVICE_SCHEMA
+    if service_name == "set_zoom":
+        return ZOOM_SERVICE_SCHEMA
+    if service_name == "set_display_mode":
+        return DISPLAY_MODE_SERVICE_SCHEMA
+    if service_name == "set_background":
+        return BACKGROUND_SERVICE_SCHEMA
+    if service_name == "set_background_brightness":
+        return BRIGHTNESS_SERVICE_SCHEMA
+    return EMPTY_SERVICE_SCHEMA
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -86,10 +128,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator_for_service = _coordinator_for_call(hass)
         await coordinator_for_service.async_command("open", **_service_payload(dict(call.data)))
 
+    async def async_handle_action(call: ServiceCall) -> None:
+        coordinator_for_service = _coordinator_for_call(hass)
+        action = SERVICE_ACTIONS[call.service]
+        await coordinator_for_service.async_command(action, **_service_payload(dict(call.data)))
+
     if not hass.services.has_service(DOMAIN, SERVICE_COMMAND):
         hass.services.async_register(DOMAIN, SERVICE_COMMAND, async_handle_command, schema=COMMAND_SERVICE_SCHEMA)
     if not hass.services.has_service(DOMAIN, SERVICE_OPEN_ITEM):
         hass.services.async_register(DOMAIN, SERVICE_OPEN_ITEM, async_handle_open_item, schema=OPEN_ITEM_SERVICE_SCHEMA)
+    for service_name in SERVICE_ACTIONS:
+        if not hass.services.has_service(DOMAIN, service_name):
+            hass.services.async_register(DOMAIN, service_name, async_handle_action, schema=_schema_for_service(service_name))
 
     return True
 
@@ -102,5 +152,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not hass.data[DOMAIN]:
             hass.services.async_remove(DOMAIN, SERVICE_COMMAND)
             hass.services.async_remove(DOMAIN, SERVICE_OPEN_ITEM)
+            for service_name in SERVICE_ACTIONS:
+                if hass.services.has_service(DOMAIN, service_name):
+                    hass.services.async_remove(DOMAIN, service_name)
             hass.data.pop(DOMAIN, None)
     return unload_ok

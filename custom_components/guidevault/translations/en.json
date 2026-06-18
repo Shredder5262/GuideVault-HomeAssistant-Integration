@@ -6,15 +6,60 @@
         "description": "Connect Home Assistant to your local GuideVault instance.",
         "data": {
           "base_url": "GuideVault URL",
-          "command_token": "GuideVault command token"
+          "command_token": "Command token"
         }
       }
     },
     "error": {
-      "cannot_connect": "Unable to connect to GuideVault. Check the URL and make sure GuideVault is running."
+      "cannot_connect": "Unable to connect to GuideVault.",
+      "unknown": "Unexpected error."
     },
     "abort": {
       "already_configured": "This GuideVault instance is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "integration_version": {"name": "Integration Version"},
+      "server_version": {"name": "Server Version"},
+      "reader": {"name": "Reader"},
+      "current_item": {"name": "Current Item"},
+      "current_item_kind": {"name": "Current Item Kind"},
+      "page": {"name": "Page"},
+      "page_count": {"name": "Page Count"},
+      "progress_percent": {"name": "Progress Percent"},
+      "zoom": {"name": "Zoom"},
+      "display_mode": {"name": "Display Mode"},
+      "background": {"name": "Background"},
+      "background_brightness_state": {"name": "Background Brightness State"}
+    },
+    "binary_sensor": {
+      "fullscreen": {"name": "Fullscreen"}
+    },
+    "switch": {
+      "fullscreen_switch": {"name": "Fullscreen"}
+    },
+    "select": {
+      "display_mode": {"name": "Display Mode"},
+      "reader_background": {"name": "Reader Background"}
+    },
+    "button": {
+      "first_page": {"name": "First Page"},
+      "previous_page": {"name": "Previous Page"},
+      "next_page": {"name": "Next Page"},
+      "last_page": {"name": "Last Page"},
+      "zoom_out": {"name": "Zoom Out"},
+      "zoom_in": {"name": "Zoom In"},
+      "toggle_overlay": {"name": "Toggle Overlay"},
+      "toggle_fullscreen": {"name": "Toggle Fullscreen"},
+      "next_background": {"name": "Next Background"},
+      "previous_background": {"name": "Previous Background"},
+      "close_reader": {"name": "Close Reader"}
+    },
+    "number": {
+      "page_number": {"name": "Page"},
+      "zoom": {"name": "Zoom"},
+      "background_brightness": {"name": "Background Brightness"}
     }
   }
 }

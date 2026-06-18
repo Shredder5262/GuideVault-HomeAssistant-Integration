@@ -12,6 +12,7 @@ class GuideVaultEntity(CoordinatorEntity[GuideVaultCoordinator]):
     """Base class for GuideVault entities."""
 
     _attr_has_entity_name = True
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator: GuideVaultCoordinator, key: str, name: str) -> None:
         super().__init__(coordinator)
@@ -22,5 +23,6 @@ class GuideVaultEntity(CoordinatorEntity[GuideVaultCoordinator]):
             "identifiers": {(DOMAIN, coordinator.api.base_url)},
             "name": "GuideVault",
             "manufacturer": "GuideVault",
+            "model": "GuideVault Reader",
             "configuration_url": coordinator.api.base_url,
         }
