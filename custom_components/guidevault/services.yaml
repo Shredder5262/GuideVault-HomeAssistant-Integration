@@ -1,195 +1,346 @@
 command:
   name: Send command
-  description: Queue a raw GuideVault reader command.
+  description: Send a raw GuideVault command payload.
   fields:
+    entry_id:
+      name: Entry ID
+      description: Optional Home Assistant config entry ID when multiple GuideVault instances are configured.
+      required: false
+      selector:
+        text:
     action:
-      required: true
-      example: toggle_fullscreen
+      name: Action
+      description: GuideVault REST action.
+      required: false
+      selector:
+        text:
+    command_action:
+      name: Command action
+      description: Backward-compatible alias for action.
+      required: false
       selector:
         text:
     item_title:
+      name: Item title
+      description: Title of the manual, strategy guide, or magazine to open.
       required: false
-      example: Super Mario 64
       selector:
         text:
     item_kind:
+      name: Item kind
+      description: GuideVault item kind.
       required: false
-      example: Manual
       selector:
         select:
           options:
-            - Manual
-            - Strategy Guide
-            - Magazine
+            - auto
+            - manual
+            - strategyGuide
+            - strategy_guide
+            - strategy-guide
+            - magazine
     issue_number:
+      name: Issue number
+      description: Magazine issue number.
       required: false
       selector:
         text:
     volume:
+      name: Volume
+      description: Magazine volume.
       required: false
       selector:
         text:
     page:
+      name: Page
+      description: Page number.
       required: false
       selector:
         number:
-          min: 0
-          max: 9999
           mode: box
     zoom:
+      name: Zoom
+      description: Reader zoom level.
       required: false
       selector:
         number:
-          min: 70
-          max: 145
-          mode: slider
+          mode: box
+          step: 0.1
     display_mode:
+      name: Display mode
+      description: Reader display mode.
       required: false
       selector:
         select:
           options:
-            - single_page
-            - two_page
-            - adaptive_two_page
+            - 1 page
+            - 2 page
+            - 2 page adaptive
     background:
+      name: Background
+      description: Reader background name or value.
       required: false
       selector:
         text:
     background_brightness:
+      name: Background brightness
+      description: Reader background brightness.
       required: false
       selector:
         number:
-          min: 15
-          max: 100
           mode: slider
+          min: 0
+          max: 100
+    fullscreen:
+      name: Fullscreen
+      description: Optional fullscreen value when supported by GuideVault.
+      required: false
+      selector:
+        boolean:
+    payload:
+      name: Extra payload
+      description: Additional raw JSON fields to merge into the command payload.
+      required: false
+      selector:
+        object:
 
 open_item:
   name: Open item
-  description: Open a GuideVault manual, strategy guide, or magazine in the reader.
+  description: Open a manual, strategy guide, or magazine in GuideVault.
   fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
     item_title:
+      name: Item title
       required: true
-      example: Super Mario 64
       selector:
         text:
     item_kind:
+      name: Item kind
       required: false
-      example: Manual
+      default: auto
       selector:
         select:
           options:
-            - Manual
-            - Strategy Guide
-            - Magazine
+            - auto
+            - manual
+            - strategyGuide
+            - strategy_guide
+            - strategy-guide
+            - magazine
     issue_number:
+      name: Issue number
+      description: Magazine issue number.
       required: false
       selector:
         text:
     volume:
+      name: Volume
+      description: Magazine volume.
+      required: false
+      selector:
+        text:
+    page:
+      name: Page
+      required: false
+      selector:
+        number:
+          mode: box
+
+next_page:
+  name: Next page
+  description: Turn to the next page in the active GuideVault reader.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+previous_page:
+  name: Previous page
+  description: Turn to the previous page in the active GuideVault reader.
+  fields:
+    entry_id:
+      name: Entry ID
       required: false
       selector:
         text:
 
 first_page:
   name: First page
-  description: Move the active GuideVault reader to the first page.
-
-previous_page:
-  name: Previous page
-  description: Move the active GuideVault reader to the previous page.
-
-next_page:
-  name: Next page
-  description: Move the active GuideVault reader to the next page.
+  description: Jump to the first page in the active GuideVault reader.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
 
 last_page:
   name: Last page
-  description: Move the active GuideVault reader to the last page.
+  description: Jump to the last page in the active GuideVault reader.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
 
-toggle_overlay:
-  name: Toggle overlay
-  description: Toggle the GuideVault reader overlay/settings shelf.
+go_to_page:
+  name: Go to page
+  description: Jump to a specific page in the active GuideVault reader.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    page:
+      name: Page
+      required: true
+      selector:
+        number:
+          mode: box
 
 toggle_fullscreen:
   name: Toggle fullscreen
-  description: Toggle fullscreen mode in the GuideVault reader.
-
-close_reader:
-  name: Close reader
-  description: Close the active GuideVault reader and return to the library.
-
-zoom_in:
-  name: Zoom in
-  description: Increase the GuideVault reader zoom.
-
-zoom_out:
-  name: Zoom out
-  description: Decrease the GuideVault reader zoom.
-
-next_background:
-  name: Next background
-  description: Move to the next installed GuideVault reader background.
-
-previous_background:
-  name: Previous background
-  description: Move to the previous installed GuideVault reader background.
-
-set_page:
-  name: Set page
-  description: Move the active GuideVault reader to a specific page.
+  description: Toggle fullscreen mode in GuideVault.
   fields:
-    page:
-      required: true
+    entry_id:
+      name: Entry ID
+      required: false
       selector:
-        number:
-          min: 1
-          max: 9999
-          mode: box
-
-set_zoom:
-  name: Set zoom
-  description: Set the GuideVault reader zoom percentage.
-  fields:
-    zoom:
-      required: true
-      selector:
-        number:
-          min: 70
-          max: 145
-          step: 5
-          mode: slider
-
-set_display_mode:
-  name: Set display mode
-  description: Set the GuideVault reader display mode.
-  fields:
-    display_mode:
-      required: true
-      selector:
-        select:
-          options:
-            - single_page
-            - two_page
-            - adaptive_two_page
+        text:
 
 set_background:
   name: Set background
-  description: Set the GuideVault reader background by installed background name.
+  description: Set the active GuideVault reader background.
   fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
     background:
+      name: Background
       required: true
       selector:
         text:
 
 set_background_brightness:
   name: Set background brightness
-  description: Set the GuideVault reader background brightness.
+  description: Set the active GuideVault reader background brightness.
   fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
     background_brightness:
+      name: Background brightness
       required: true
       selector:
         number:
-          min: 15
-          max: 100
-          step: 1
           mode: slider
+          min: 0
+          max: 100
+
+set_zoom:
+  name: Set zoom
+  description: Set the active GuideVault reader zoom.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    zoom:
+      name: Zoom
+      required: true
+      selector:
+        number:
+          mode: box
+          step: 0.1
+
+set_display_mode:
+  name: Set display mode
+  description: Set the active GuideVault reader display mode.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+    display_mode:
+      name: Display mode
+      required: true
+      selector:
+        select:
+          options:
+            - 1 page
+            - 2 page
+            - 2 page adaptive
+
+close_reader:
+  name: Close reader
+  description: Close the active GuideVault reader when supported by GuideVault.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+toggle_overlay:
+  name: Toggle overlay
+  description: Toggle the GuideVault reader overlay.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+zoom_in:
+  name: Zoom in
+  description: Increase the active GuideVault reader zoom.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+zoom_out:
+  name: Zoom out
+  description: Decrease the active GuideVault reader zoom.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+next_background:
+  name: Next background
+  description: Switch to the next installed GuideVault reader background.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:
+
+previous_background:
+  name: Previous background
+  description: Switch to the previous installed GuideVault reader background.
+  fields:
+    entry_id:
+      name: Entry ID
+      required: false
+      selector:
+        text:

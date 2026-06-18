@@ -1,164 +1,278 @@
-"""Sensors for GuideVault."""
+"""Sensor entities for GuideVault."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any, Callable
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION
-from .coordinator import GuideVaultCoordinator
-from .entity import GuideVaultEntity
-
-
-def _server_version(coordinator: GuideVaultCoordinator) -> str:
-    data = coordinator.data or {}
-    return str(data.get("version") or data.get("serverVersion") or data.get("appVersion") or "Unknown")
+from .const import DATA_COORDINATORS, DOMAIN
+from .coordinator import GuideVaultDataUpdateCoordinator
 
 
-def _display_mode(coordinator: GuideVaultCoordinator) -> str:
-    return str(coordinator.reader.get("displayMode") or "")
+def _normalize_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(value).lower())
 
 
-def _progress(coordinator: GuideVaultCoordinator) -> float:
+def _flatten(data: Any, prefix: str = "") -> dict[str, Any]:
+    flat: dict[str, Any] = {}
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            full = f"{prefix}.{key}" if prefix else str(key)
+            flat[_normalize_key(full)] = value
+            flat[_normalize_key(str(key))] = value
+            flat.update(_flatten(value, full))
+    elif isinstance(data, list):
+        for index, value in enumerate(data):
+            flat.update(_flatten(value, f"{prefix}.{index}" if prefix else str(index)))
+
+    return flat
+
+
+def _find(data: dict[str, Any], *keys: str) -> Any:
+    flat = _flatten(data)
+    for key in keys:
+        normalized = _normalize_key(key)
+        if normalized in flat and flat[normalized] not in (None, ""):
+            return flat[normalized]
+    return None
+
+
+def _reader_state(data: dict[str, Any]) -> str | None:
+    explicit = _find(data, "readerState", "reader.state", "state", "readingState")
+    if explicit is not None:
+        return str(explicit)
+
+    value = _find(data, "readerOpen", "reader.open", "isReaderOpen", "open", "readerVisible")
+    if isinstance(value, bool):
+        return "open" if value else "closed"
+
+    if _currently_reading(data) or _page(data) is not None:
+        return "reading"
+
+    return None
+
+
+def _currently_reading(data: dict[str, Any]) -> str | None:
+    value = _find(
+        data,
+        "currentlyReading",
+        "currentTitle",
+        "itemTitle",
+        "title",
+        "reader.currentTitle",
+        "reader.itemTitle",
+        "reader.title",
+        "activeTitle",
+        "activeItem.title",
+        "document.title",
+    )
+    return None if value is None else str(value)
+
+
+def _content_type(data: dict[str, Any]) -> str | None:
+    value = _find(data, "contentType", "itemKind", "kind", "type", "reader.contentType", "reader.itemKind")
+    return None if value is None else str(value)
+
+
+def _page(data: dict[str, Any]) -> int | None:
+    return _int_or_none(_find(data, "page", "currentPage", "pageNumber", "reader.page", "reader.currentPage"))
+
+
+def _page_count(data: dict[str, Any]) -> int | None:
+    return _int_or_none(_find(data, "pageCount", "totalPages", "pages", "reader.pageCount", "reader.totalPages"))
+
+
+def _zoom(data: dict[str, Any]) -> float | int | None:
+    return _number_or_none(_find(data, "zoom", "zoomPercent", "reader.zoom", "reader.zoomPercent"))
+
+
+def _display_mode(data: dict[str, Any]) -> str | None:
+    value = _find(data, "displayMode", "pageMode", "reader.displayMode", "reader.pageMode")
+    if value is None:
+        return None
+
+    text = str(value).strip().lower().replace("_", " ").replace("-", " ")
+    if text in ("single", "one", "one page", "1", "1page", "1 page"):
+        return "1 page"
+    if text in ("double", "two", "two page", "two pages", "2", "2page", "2 page", "2 pages"):
+        return "2 page"
+    if text in ("adaptive", "two page adaptive", "two pages adaptive", "2 adaptive", "2pageadaptive", "2 page adaptive", "2 pages adaptive"):
+        return "2 page adaptive"
+
+    return str(value)
+
+
+def _background(data: dict[str, Any]) -> str | None:
+    value = _find(data, "background", "backgroundName", "reader.background", "reader.backgroundName")
+    return None if value is None else str(value)
+
+
+def _background_brightness(data: dict[str, Any]) -> float | int | None:
+    return _number_or_none(_find(data, "backgroundBrightness", "background_brightness", "brightness", "reader.backgroundBrightness", "reader.background_brightness", "reader.brightness"))
+
+
+def _fullscreen(data: dict[str, Any]) -> str | None:
+    value = _find(data, "fullscreen", "isFullscreen", "reader.fullscreen", "reader.isFullscreen", "reader.readerFullscreen", "fullScreen")
+    if isinstance(value, bool):
+        return "on" if value else "off"
+    if value is not None:
+        return str(value)
+    return None
+
+
+def _version(data: dict[str, Any]) -> str | None:
+    value = _find(data, "version", "serverVersion", "guideVaultVersion", "appVersion", "applicationVersion", "buildVersion")
+    return None if value is None else str(value)
+
+
+def _available_backgrounds(data: dict[str, Any]) -> list[str] | None:
+    value = _find(data, "availableBackgrounds", "installedBackgrounds", "backgrounds", "reader.availableBackgrounds", "reader.installedBackgrounds")
+    result = _coerce_background_names(value)
+    return result or None
+
+
+def _coerce_background_names(value: Any) -> list[str]:
+    if isinstance(value, list):
+        names: list[str] = []
+        for item in value:
+            if isinstance(item, dict):
+                name = item.get("displayName") or item.get("name") or item.get("value") or item.get("id") or item.get("label") or item.get("title")
+                if name not in (None, ""):
+                    names.append(str(name))
+            elif item not in (None, ""):
+                names.append(str(item))
+        return names
+    if isinstance(value, dict):
+        names = []
+        for key, item in value.items():
+            if isinstance(item, dict):
+                name = item.get("displayName") or item.get("name") or item.get("value") or item.get("id") or item.get("label") or item.get("title") or key
+                names.append(str(name))
+            elif key not in (None, ""):
+                names.append(str(key))
+        return names
+    return []
+
+
+def _int_or_none(value: Any) -> int | None:
     try:
-        return float(coordinator.reader.get("progressPercent") or 0)
+        return int(value)
     except (TypeError, ValueError):
-        return 0.0
+        return None
 
 
-@dataclass(frozen=True)
-class GuideVaultSensorDescription:
-    key: str
-    name: str
-    value_fn: Callable[[GuideVaultCoordinator], Any]
-    icon: str
+def _number_or_none(value: Any) -> float | int | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    if number.is_integer():
+        return int(number)
+
+    return number
 
 
-SENSORS = [
-    GuideVaultSensorDescription(
-        "integration_version",
-        "Integration Version",
-        lambda c: VERSION,
-        "mdi:puzzle-outline",
-    ),
-    GuideVaultSensorDescription(
-        "server_version",
-        "Server Version",
-        _server_version,
-        "mdi:server",
-    ),
-    GuideVaultSensorDescription(
-        "reader",
-        "Reader",
-        lambda c: "reading" if c.reader.get("readerActive") else "idle",
-        "mdi:book-open-page-variant",
-    ),
-    GuideVaultSensorDescription(
-        "current_item",
-        "Current Item",
-        lambda c: c.reader.get("itemTitle") or "None",
-        "mdi:book-open",
-    ),
-    GuideVaultSensorDescription(
-        "current_item_kind",
-        "Current Item Kind",
-        lambda c: c.reader.get("itemKind") or "None",
-        "mdi:shape-outline",
-    ),
-    GuideVaultSensorDescription(
-        "page",
-        "Page",
-        lambda c: c.reader.get("page") or 0,
-        "mdi:file-document-outline",
-    ),
-    GuideVaultSensorDescription(
-        "page_count",
-        "Page Count",
-        lambda c: c.reader.get("pageCount") or 0,
-        "mdi:file-multiple-outline",
-    ),
-    GuideVaultSensorDescription(
-        "progress_percent",
-        "Progress Percent",
-        _progress,
-        "mdi:progress-check",
-    ),
-    GuideVaultSensorDescription(
-        "zoom",
-        "Zoom",
-        lambda c: c.reader.get("zoom") or 100,
-        "mdi:magnify",
-    ),
-    GuideVaultSensorDescription(
-        "display_mode",
-        "Display Mode",
-        _display_mode,
-        "mdi:book-open-variant",
-    ),
-    GuideVaultSensorDescription(
-        "background",
-        "Background",
-        lambda c: c.current_background_display_name,
-        "mdi:image-filter-hdr",
-    ),
-    GuideVaultSensorDescription(
-        "background_brightness_state",
-        "Background Brightness State",
-        lambda c: c.reader.get("backgroundBrightness") or 72,
-        "mdi:brightness-6",
-    ),
-]
+@dataclass(frozen=True, slots=True)
+class GuideVaultSensorDescription(SensorEntityDescription):
+    """Description for a GuideVault sensor."""
+
+    value_fn: Callable[[dict[str, Any]], Any] | None = None
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+SENSORS: tuple[GuideVaultSensorDescription, ...] = (
+    GuideVaultSensorDescription(key="currently_reading", name="Currently reading", icon="mdi:book-open-page-variant", value_fn=_currently_reading),
+    GuideVaultSensorDescription(key="reader_state", name="Reader state", icon="mdi:book-open", value_fn=_reader_state),
+    GuideVaultSensorDescription(key="content_type", name="Content type", icon="mdi:shape", value_fn=_content_type),
+    GuideVaultSensorDescription(key="page", name="Page", icon="mdi:file-document-outline", value_fn=_page),
+    GuideVaultSensorDescription(key="page_count", name="Page count", icon="mdi:file-document-multiple-outline", value_fn=_page_count),
+    GuideVaultSensorDescription(key="zoom", name="Zoom", icon="mdi:magnify", value_fn=_zoom),
+    GuideVaultSensorDescription(key="display_mode", name="Display mode", icon="mdi:book-open-variant", value_fn=_display_mode),
+    GuideVaultSensorDescription(key="background", name="Background", icon="mdi:image", value_fn=_background),
+    GuideVaultSensorDescription(key="background_brightness", name="Background brightness", icon="mdi:brightness-6", value_fn=_background_brightness),
+    GuideVaultSensorDescription(key="fullscreen", name="Fullscreen", icon="mdi:fullscreen", value_fn=_fullscreen),
+    GuideVaultSensorDescription(key="version", name="Version", icon="mdi:information-outline", entity_category=EntityCategory.DIAGNOSTIC, value_fn=_version),
+)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up GuideVault sensors."""
-    coordinator: GuideVaultCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([GuideVaultSensor(coordinator, description) for description in SENSORS])
+    coordinator: GuideVaultDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATORS][entry.entry_id]
+
+    async_add_entities(
+        GuideVaultSensor(coordinator, entry, description)
+        for description in SENSORS
+    )
 
 
-class GuideVaultSensor(GuideVaultEntity, SensorEntity):
-    """GuideVault sensor entity."""
+class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], SensorEntity):
+    """GuideVault status sensor."""
 
-    def __init__(self, coordinator: GuideVaultCoordinator, description: GuideVaultSensorDescription) -> None:
-        super().__init__(coordinator, description.key, description.name)
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: GuideVaultDataUpdateCoordinator,
+        entry: ConfigEntry,
+        description: GuideVaultSensorDescription,
+    ) -> None:
+        super().__init__(coordinator)
         self.entity_description = description
-        self._attr_icon = description.icon
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": entry.title,
+            "manufacturer": "GuideVault",
+            "model": "GuideVault Server",
+        }
 
     @property
     def native_value(self) -> Any:
-        return self.entity_description.value_fn(self.coordinator)
+        """Return the sensor value."""
+        data = self.coordinator.data or {}
+        if not isinstance(data, dict):
+            return None
+
+        if self.entity_description.value_fn is None:
+            return None
+
+        return self.entity_description.value_fn(data)
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        reader = self.coordinator.reader
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return useful status attributes."""
         data = self.coordinator.data or {}
+        if not isinstance(data, dict):
+            return None
+
+        if self.entity_description.key != "currently_reading":
+            return None
+
         return {
-            "integration_version": VERSION,
-            "server_version": data.get("version") or data.get("serverVersion") or data.get("appVersion") or "",
-            "enabled": data.get("enabled", False),
-            "push_state_enabled": data.get("pushStateEnabled", False),
-            "push_events_enabled": data.get("pushEventsEnabled", False),
-            "command_enabled": data.get("commandEnabled", False),
-            "entity_prefix": data.get("entityPrefix", "guidevault"),
-            "reader_active": reader.get("readerActive", False),
-            "view": reader.get("view", "library"),
-            "item_id": reader.get("itemId", ""),
-            "item_title": reader.get("itemTitle", ""),
-            "item_kind": reader.get("itemKind", ""),
-            "page": reader.get("page", 0),
-            "page_count": reader.get("pageCount", 0),
-            "progress_percent": reader.get("progressPercent", 0),
-            "zoom": reader.get("zoom", 100),
-            "display_mode": reader.get("displayMode", ""),
-            "fullscreen": reader.get("fullscreen", False),
-            "background": self.coordinator.current_background_name,
-            "background_display_name": self.coordinator.current_background_display_name,
-            "background_brightness": reader.get("backgroundBrightness", 72),
-            "available_backgrounds": [bg["name"] for bg in self.coordinator.available_backgrounds],
-            "available_background_options": self.coordinator.available_backgrounds,
+            "reader_state": _reader_state(data),
+            "content_type": _content_type(data),
+            "page": _page(data),
+            "page_count": _page_count(data),
+            "zoom": _zoom(data),
+            "display_mode": _display_mode(data),
+            "background": _background(data),
+            "background_brightness": _background_brightness(data),
+            "fullscreen": _fullscreen(data),
+            "version": _version(data),
+            "available_backgrounds": _available_backgrounds(data),
+            "status_endpoint": self.coordinator.client.status_url,
         }

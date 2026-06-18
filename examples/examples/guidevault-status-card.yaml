@@ -1,0 +1,23 @@
+type: entities
+title: GuideVault
+entities:
+  - entity: sensor.guidevault_currently_reading
+    name: Currently reading
+  - entity: sensor.guidevault_reader_state
+    name: Reader state
+  - entity: sensor.guidevault_content_type
+    name: Content type
+  - entity: sensor.guidevault_page
+    name: Page
+  - entity: sensor.guidevault_page_count
+    name: Page count
+  - entity: sensor.guidevault_display_mode
+    name: Display mode
+  - entity: sensor.guidevault_zoom
+    name: Zoom
+  - entity: sensor.guidevault_background
+    name: Background
+  - entity: sensor.guidevault_background_brightness
+    name: Background brightness
+  - entity: sensor.guidevault_fullscreen
+    name: Fullscreen

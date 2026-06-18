@@ -5,44 +5,91 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "guidevault"
-NAME = "GuideVault"
-VERSION = "0.5.9"
+PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR, Platform.SELECT, Platform.NUMBER, Platform.SWITCH]
 
-CONF_BASE_URL = "base_url"
-CONF_COMMAND_TOKEN = "command_token"
+DEFAULT_NAME = "GuideVault"
+DEFAULT_HOST = "localhost"
+DEFAULT_PORT = 5478
+DEFAULT_TIMEOUT = 10
+DEFAULT_SCAN_INTERVAL = 2
 
-DEFAULT_BASE_URL = "http://localhost:5478"
-DEFAULT_SCAN_INTERVAL_SECONDS = 5
+CONF_API_KEY = "api_key"
+CONF_SSL = "ssl"
+CONF_VERIFY_SSL = "verify_ssl"
+CONF_TIMEOUT = "timeout"
+CONF_COMMAND_ENDPOINT = "command_endpoint"
+CONF_STATUS_ENDPOINT = "status_endpoint"
+CONF_SCAN_INTERVAL = "scan_interval"
 
-# Always load the full reader control surface. Do not gate controls behind setup
-# options; an accidental false option makes Home Assistant hide buttons/numbers.
-PLATFORMS: list[Platform] = [
-    Platform.SENSOR,
-    Platform.BINARY_SENSOR,
-    Platform.BUTTON,
-    Platform.SELECT,
-    Platform.NUMBER,
-    Platform.SWITCH,
+DATA_CLIENTS = "clients"
+DATA_COORDINATORS = "coordinators"
+DATA_SERVICES_REGISTERED = "services_registered"
+
+COMMAND_ENDPOINT = "/api/home-assistant/command"
+STATUS_ENDPOINT = "/api/home-assistant/status"
+
+SERVICE_COMMAND = "command"
+SERVICE_OPEN_ITEM = "open_item"
+SERVICE_NEXT_PAGE = "next_page"
+SERVICE_PREVIOUS_PAGE = "previous_page"
+SERVICE_FIRST_PAGE = "first_page"
+SERVICE_LAST_PAGE = "last_page"
+SERVICE_GO_TO_PAGE = "go_to_page"
+SERVICE_TOGGLE_FULLSCREEN = "toggle_fullscreen"
+SERVICE_SET_BACKGROUND = "set_background"
+SERVICE_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
+SERVICE_SET_ZOOM = "set_zoom"
+SERVICE_SET_DISPLAY_MODE = "set_display_mode"
+SERVICE_CLOSE_READER = "close_reader"
+SERVICE_TOGGLE_OVERLAY = "toggle_overlay"
+SERVICE_ZOOM_IN = "zoom_in"
+SERVICE_ZOOM_OUT = "zoom_out"
+SERVICE_NEXT_BACKGROUND = "next_background"
+SERVICE_PREVIOUS_BACKGROUND = "previous_background"
+
+ACTION_OPEN = "open"
+ACTION_PAGE_NEXT = "next_page"
+ACTION_PAGE_PREVIOUS = "previous_page"
+ACTION_PAGE_FIRST = "first_page"
+ACTION_PAGE_LAST = "last_page"
+ACTION_PAGE_GOTO = "set_page"
+ACTION_TOGGLE_FULLSCREEN = "toggle_fullscreen"
+ACTION_SET_BACKGROUND = "set_background"
+ACTION_SET_BACKGROUND_BRIGHTNESS = "set_background_brightness"
+ACTION_SET_ZOOM = "set_zoom"
+ACTION_SET_DISPLAY_MODE = "set_display_mode"
+ACTION_CLOSE = "close_reader"
+ACTION_TOGGLE_OVERLAY = "toggle_overlay"
+ACTION_ZOOM_IN = "zoom_in"
+ACTION_ZOOM_OUT = "zoom_out"
+ACTION_NEXT_BACKGROUND = "next_background"
+ACTION_PREVIOUS_BACKGROUND = "previous_background"
+ACTION_FULLSCREEN_ON = "fullscreen"
+ACTION_FULLSCREEN_OFF = "exit_fullscreen"
+
+ITEM_KINDS = [
+    "auto",
+    "manual",
+    "strategyGuide",
+    "strategy_guide",
+    "strategy-guide",
+    "magazine",
 ]
 
-DISPLAY_MODE_OPTIONS: dict[str, str] = {
-    "1 page": "single_page",
-    "2 page": "two_page",
-    "2 page adaptive": "adaptive_two_page",
-}
+DEFAULT_BACKGROUNDS = [
+    "default",
+    "dark",
+    "black",
+    "gray",
+    "white",
+    "paper",
+    "sepia",
+    "wood",
+    "transparent",
+]
 
-DISPLAY_MODE_LABELS: dict[str, str] = {value: key for key, value in DISPLAY_MODE_OPTIONS.items()}
-
-COMMAND_ACTIONS: dict[str, str] = {
-    "first_page": "first_page",
-    "previous_page": "previous_page",
-    "next_page": "next_page",
-    "last_page": "last_page",
-    "toggle_overlay": "toggle_overlay",
-    "toggle_fullscreen": "toggle_fullscreen",
-    "close_reader": "close_reader",
-    "zoom_in": "zoom_in",
-    "zoom_out": "zoom_out",
-    "next_background": "next_background",
-    "previous_background": "previous_background",
-}
+DEFAULT_DISPLAY_MODES = [
+    "1 page",
+    "2 page",
+    "2 page adaptive",
+]

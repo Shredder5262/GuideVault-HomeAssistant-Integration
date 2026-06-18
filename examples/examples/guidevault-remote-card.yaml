@@ -1,0 +1,71 @@
+type: grid
+columns: 3
+square: false
+cards:
+  - type: button
+    name: First
+    icon: mdi:page-first
+    tap_action:
+      action: call-service
+      service: guidevault.first_page
+  - type: button
+    name: Prev
+    icon: mdi:chevron-left
+    tap_action:
+      action: call-service
+      service: guidevault.previous_page
+  - type: button
+    name: Next
+    icon: mdi:chevron-right
+    tap_action:
+      action: call-service
+      service: guidevault.next_page
+  - type: button
+    name: Last
+    icon: mdi:page-last
+    tap_action:
+      action: call-service
+      service: guidevault.last_page
+  - type: button
+    name: Fullscreen
+    icon: mdi:fullscreen
+    tap_action:
+      action: call-service
+      service: guidevault.toggle_fullscreen
+  - type: button
+    name: Close
+    icon: mdi:close-box-outline
+    tap_action:
+      action: call-service
+      service: guidevault.close_reader
+
+  - type: button
+    name: Toggle Overlay
+    icon: mdi:layers-outline
+    tap_action:
+      action: call-service
+      service: guidevault.toggle_overlay
+  - type: button
+    name: Zoom In
+    icon: mdi:magnify-plus-outline
+    tap_action:
+      action: call-service
+      service: guidevault.zoom_in
+  - type: button
+    name: Zoom Out
+    icon: mdi:magnify-minus-outline
+    tap_action:
+      action: call-service
+      service: guidevault.zoom_out
+  - type: button
+    name: Prev Background
+    icon: mdi:image-arrow-left
+    tap_action:
+      action: call-service
+      service: guidevault.previous_background
+  - type: button
+    name: Next Background
+    icon: mdi:image-arrow-right
+    tap_action:
+      action: call-service
+      service: guidevault.next_background
