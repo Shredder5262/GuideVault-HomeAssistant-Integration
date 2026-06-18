@@ -62,7 +62,6 @@ from .const import (
     SERVICE_SET_DISPLAY_MODE,
     SERVICE_SET_ZOOM,
     SERVICE_STATUS,
-    SERVICE_TOGGLE_FULLSCREEN,
     SERVICE_TOGGLE_OVERLAY,
     SERVICE_ZOOM_IN,
     SERVICE_ZOOM_OUT,
@@ -252,8 +251,6 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_SET_ZOOM, handle_set_zoom, schema=SET_ZOOM_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_DISPLAY_MODE, handle_set_display_mode, schema=SET_DISPLAY_MODE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_TOGGLE_OVERLAY, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
-    # Compatibility alias. GuideVault confirmed command is toggle_overlay.
-    hass.services.async_register(DOMAIN, SERVICE_TOGGLE_FULLSCREEN, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND, handle_set_background, schema=SET_BACKGROUND_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND_BRIGHTNESS, handle_set_background_brightness, schema=SET_BACKGROUND_BRIGHTNESS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CLOSE_READER, lambda call: handle_simple(ACTION_CLOSE, call), schema=SIMPLE_SCHEMA)

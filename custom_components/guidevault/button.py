@@ -31,16 +31,17 @@ class GuideVaultButtonDescription:
     icon: str
 
 
+# Entity creation order is intentional. Home Assistant may still sort sections in
+# the device page, but dashboards and some entity lists preserve this order.
 BUTTONS: tuple[GuideVaultButtonDescription, ...] = (
     GuideVaultButtonDescription("first_page", "First page", ACTION_PAGE_FIRST, "mdi:page-first"),
     GuideVaultButtonDescription("previous_page", "Previous page", ACTION_PAGE_PREVIOUS, "mdi:chevron-left"),
     GuideVaultButtonDescription("next_page", "Next page", ACTION_PAGE_NEXT, "mdi:chevron-right"),
     GuideVaultButtonDescription("last_page", "Last page", ACTION_PAGE_LAST, "mdi:page-last"),
+    GuideVaultButtonDescription("toggle_overlay", "Toggle overlay", ACTION_TOGGLE_OVERLAY, "mdi:eye-outline"),
+    GuideVaultButtonDescription("close_reader", "Close reader", ACTION_CLOSE, "mdi:close-box-outline"),
     GuideVaultButtonDescription("zoom_out", "Zoom out", ACTION_ZOOM_OUT, "mdi:magnify-minus-outline"),
     GuideVaultButtonDescription("zoom_in", "Zoom in", ACTION_ZOOM_IN, "mdi:magnify-plus-outline"),
-    GuideVaultButtonDescription("toggle_overlay", "Toggle overlay", ACTION_TOGGLE_OVERLAY, "mdi:eye-outline"),
-    GuideVaultButtonDescription("toggle_fullscreen", "Toggle fullscreen", ACTION_TOGGLE_OVERLAY, "mdi:fullscreen"),
-    GuideVaultButtonDescription("close_reader", "Close reader", ACTION_CLOSE, "mdi:close-box-outline"),
 )
 
 

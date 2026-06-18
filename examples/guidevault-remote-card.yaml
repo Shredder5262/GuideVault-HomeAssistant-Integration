@@ -27,6 +27,18 @@ cards:
       action: call-service
       service: guidevault.last_page
   - type: button
+    name: Overlay
+    icon: mdi:eye-outline
+    tap_action:
+      action: call-service
+      service: guidevault.toggle_overlay
+  - type: button
+    name: Close
+    icon: mdi:close-box-outline
+    tap_action:
+      action: call-service
+      service: guidevault.close_reader
+  - type: button
     name: Zoom -
     icon: mdi:magnify-minus-outline
     tap_action:
@@ -38,15 +50,3 @@ cards:
     tap_action:
       action: call-service
       service: guidevault.zoom_in
-  - type: button
-    name: Fullscreen
-    icon: mdi:fullscreen
-    tap_action:
-      action: call-service
-      service: guidevault.toggle_fullscreen
-  - type: button
-    name: Close
-    icon: mdi:close-box-outline
-    tap_action:
-      action: call-service
-      service: guidevault.close_reader

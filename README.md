@@ -96,3 +96,13 @@ Background and background brightness are reported as sensors if GuideVault statu
 - Added active `Toggle fullscreen` button entity as a compatibility alias for `toggle_overlay`.
 - Restored active background and background brightness controls.
 - Background controls send `set_background` and `set_background_brightness`; these still require matching GuideVault server-side command support.
+
+
+## v0.5.2
+
+- Removes the broken Toggle fullscreen button entity. Use Toggle overlay instead.
+- Display mode now defaults to `2 page` when GuideVault status does not report a value.
+- Background selector now recursively discovers background lists from nested status payloads and filters `unknown`/`unavailable`.
+- Background brightness control uses box mode instead of slider mode to avoid Home Assistant opening the more-info dialog when dragging to 0.
+- Removes redundant background/background brightness sensors; the select and number entities are the active state/control surfaces.
+- Reorders the remote card so Close reader sits with the other reader buttons.

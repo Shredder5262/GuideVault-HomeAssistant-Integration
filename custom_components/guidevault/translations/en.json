@@ -65,9 +65,6 @@
       },
       "close_reader": {
         "name": "Close reader"
-      },
-      "toggle_fullscreen": {
-        "name": "Toggle fullscreen"
       }
     },
     "sensor": {
@@ -91,12 +88,6 @@
       },
       "display_mode": {
         "name": "Display mode"
-      },
-      "background": {
-        "name": "Background"
-      },
-      "background_brightness": {
-        "name": "Background brightness"
       },
       "fullscreen": {
         "name": "Overlay / fullscreen"

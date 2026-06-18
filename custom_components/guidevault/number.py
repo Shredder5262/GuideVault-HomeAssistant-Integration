@@ -61,7 +61,10 @@ class GuideVaultZoomNumber(GuideVaultBaseNumber):
 
 class GuideVaultBackgroundBrightnessNumber(GuideVaultBaseNumber):
     def __init__(self, hass: HomeAssistant, coordinator: GuideVaultDataUpdateCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(hass, coordinator, entry, "background_brightness_control", "Background brightness", "mdi:brightness-6", 0, 100, 1, NumberMode.SLIDER)
+        # BOX mode avoids the Home Assistant more-info panel popping open when
+        # dragging an inline slider all the way to 0. The value can still be set
+        # to 0 and the service still sends set_background_brightness.
+        super().__init__(hass, coordinator, entry, "background_brightness_control", "Background brightness", "mdi:brightness-6", 0, 100, 1, NumberMode.BOX)
 
     @property
     def native_value(self) -> float | None:

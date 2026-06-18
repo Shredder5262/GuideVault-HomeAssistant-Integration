@@ -148,8 +148,6 @@ SENSORS: tuple[GuideVaultSensorDescription, ...] = (
     GuideVaultSensorDescription(key="page_count", name="Page count", icon="mdi:file-document-multiple-outline", value_fn=_page_count),
     GuideVaultSensorDescription(key="zoom", name="Zoom", icon="mdi:magnify", value_fn=_zoom),
     GuideVaultSensorDescription(key="display_mode", name="Display mode", icon="mdi:book-open-variant", value_fn=_display_mode),
-    GuideVaultSensorDescription(key="background", name="Background", icon="mdi:image", value_fn=_background),
-    GuideVaultSensorDescription(key="background_brightness", name="Background brightness", icon="mdi:brightness-6", value_fn=_background_brightness),
     GuideVaultSensorDescription(key="fullscreen", name="Overlay / fullscreen", icon="mdi:fullscreen", value_fn=_overlay),
     GuideVaultSensorDescription(key="version", name="Version", icon="mdi:information-outline", entity_category=EntityCategory.DIAGNOSTIC, value_fn=_version),
 )
@@ -194,8 +192,6 @@ class GuideVaultSensor(CoordinatorEntity[GuideVaultDataUpdateCoordinator], Senso
             "page_count": _page_count(data),
             "zoom": _zoom(data),
             "display_mode": _display_mode(data),
-            "background": _background(data),
-            "background_brightness": _background_brightness(data),
             "overlay_or_fullscreen": _overlay(data),
             "version": _version(data),
             "status_endpoint": self.coordinator.client.status_url,

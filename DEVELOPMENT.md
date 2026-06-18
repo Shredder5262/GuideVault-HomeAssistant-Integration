@@ -48,3 +48,8 @@ close_reader
 ## v0.5.1
 
 Fixes the `HomeAssistant object has no attribute helpers` refresh scheduling bug. Restores background controls and adds a `toggle_fullscreen` entity alias that sends `toggle_overlay`.
+
+
+## v0.5.2
+
+UI/control cleanup for Home Assistant: remove broken fullscreen entity, default display mode to 2 page, improve background option discovery, and remove redundant background status sensors.
