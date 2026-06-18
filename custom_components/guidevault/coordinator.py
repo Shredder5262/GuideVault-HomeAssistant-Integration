@@ -18,18 +18,12 @@ _LOGGER = logging.getLogger(__name__)
 class GuideVaultCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Poll GuideVault status and expose convenience helpers."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        api: GuideVaultApiClient,
-        scan_interval_seconds: int = DEFAULT_SCAN_INTERVAL_SECONDS,
-    ) -> None:
-        interval = max(2, int(scan_interval_seconds or DEFAULT_SCAN_INTERVAL_SECONDS))
+    def __init__(self, hass: HomeAssistant, api: GuideVaultApiClient) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=interval),
+            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL_SECONDS),
         )
         self.api = api
 

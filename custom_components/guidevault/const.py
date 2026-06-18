@@ -6,21 +6,16 @@ from homeassistant.const import Platform
 
 DOMAIN = "guidevault"
 NAME = "GuideVault"
-VERSION = "0.5.8"
+VERSION = "0.5.9"
 
 CONF_BASE_URL = "base_url"
 CONF_COMMAND_TOKEN = "command_token"
-CONF_ENTITY_PREFIX = "entity_prefix"
-CONF_SCAN_INTERVAL = "scan_interval"
-CONF_ENABLE_CONTROLS = "enable_controls"
-CONF_ENABLE_BACKGROUND_CONTROLS = "enable_background_controls"
 
 DEFAULT_BASE_URL = "http://localhost:5478"
-DEFAULT_ENTITY_PREFIX = "guidevault"
 DEFAULT_SCAN_INTERVAL_SECONDS = 5
-DEFAULT_ENABLE_CONTROLS = True
-DEFAULT_ENABLE_BACKGROUND_CONTROLS = True
 
+# Always load the full reader control surface. Do not gate controls behind setup
+# options; an accidental false option makes Home Assistant hide buttons/numbers.
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,

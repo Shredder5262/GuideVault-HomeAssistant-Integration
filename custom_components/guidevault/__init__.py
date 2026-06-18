@@ -11,27 +11,12 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
 from .api import GuideVaultApiClient
-from .const import (
-    COMMAND_ACTIONS,
-    CONF_BASE_URL,
-    CONF_COMMAND_TOKEN,
-    CONF_ENABLE_BACKGROUND_CONTROLS,
-    CONF_ENABLE_CONTROLS,
-    CONF_SCAN_INTERVAL,
-    DEFAULT_ENABLE_BACKGROUND_CONTROLS,
-    DEFAULT_ENABLE_CONTROLS,
-    DEFAULT_SCAN_INTERVAL_SECONDS,
-    DOMAIN,
-    PLATFORMS,
-)
+from .const import COMMAND_ACTIONS, CONF_BASE_URL, CONF_COMMAND_TOKEN, DOMAIN, PLATFORMS
 from .coordinator import GuideVaultCoordinator
 
 SERVICE_COMMAND = "command"
 SERVICE_OPEN_ITEM = "open_item"
 
-# Explicit one-shot services. These mirror the button entities so the controls
-# remain available even when Home Assistant hides, disables, or delays entity
-# registry creation for a platform after an update.
 SERVICE_ACTIONS = {
     **COMMAND_ACTIONS,
     "set_page": "set_page",
@@ -71,29 +56,6 @@ DISPLAY_MODE_SERVICE_SCHEMA = vol.Schema({vol.Required("display_mode"): cv.strin
 BACKGROUND_SERVICE_SCHEMA = vol.Schema({vol.Required("background"): cv.string})
 BRIGHTNESS_SERVICE_SCHEMA = vol.Schema({vol.Required("background_brightness"): vol.Coerce(int)})
 EMPTY_SERVICE_SCHEMA = vol.Schema({})
-
-
-def _entry_value(entry: ConfigEntry, key: str, default: Any) -> Any:
-    return entry.options.get(key, entry.data.get(key, default))
-
-
-def _enabled_platforms(entry: ConfigEntry) -> list[Any]:
-    """Return platforms to load for the current options."""
-    # Always load all platforms by default. These toggles are kept as setup
-    # wizard/options entries so users can deliberately hide controls later, but
-    # existing installs get every reader control restored automatically.
-    controls_enabled = bool(_entry_value(entry, CONF_ENABLE_CONTROLS, DEFAULT_ENABLE_CONTROLS))
-    backgrounds_enabled = bool(
-        _entry_value(entry, CONF_ENABLE_BACKGROUND_CONTROLS, DEFAULT_ENABLE_BACKGROUND_CONTROLS)
-    )
-    platforms = list(PLATFORMS)
-    if not controls_enabled:
-        platforms = [platform for platform in platforms if str(platform) not in {"button", "number", "switch"}]
-    if not backgrounds_enabled:
-        # Background entities live in select/button/number platforms with other
-        # controls. Keep platforms loaded unless all controls were disabled.
-        return platforms
-    return platforms
 
 
 def _coordinator_for_call(hass: HomeAssistant) -> GuideVaultCoordinator:
@@ -145,19 +107,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = aiohttp_client.async_get_clientsession(hass)
     api = GuideVaultApiClient(
         session,
-        _entry_value(entry, CONF_BASE_URL, ""),
-        _entry_value(entry, CONF_COMMAND_TOKEN, ""),
+        entry.data[CONF_BASE_URL],
+        entry.data.get(CONF_COMMAND_TOKEN, ""),
     )
-    coordinator = GuideVaultCoordinator(
-        hass,
-        api,
-        int(_entry_value(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS)),
-    )
+    coordinator = GuideVaultCoordinator(hass, api)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-    await hass.config_entries.async_forward_entry_setups(entry, _enabled_platforms(entry))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     async def async_handle_command(call: ServiceCall) -> None:
         coordinator_for_service = _coordinator_for_call(hass)
@@ -184,20 +141,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload GuideVault after options are changed."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload GuideVault."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, _enabled_platforms(entry))
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         if not hass.data[DOMAIN]:
-            hass.services.async_remove(DOMAIN, SERVICE_COMMAND)
-            hass.services.async_remove(DOMAIN, SERVICE_OPEN_ITEM)
+            if hass.services.has_service(DOMAIN, SERVICE_COMMAND):
+                hass.services.async_remove(DOMAIN, SERVICE_COMMAND)
+            if hass.services.has_service(DOMAIN, SERVICE_OPEN_ITEM):
+                hass.services.async_remove(DOMAIN, SERVICE_OPEN_ITEM)
             for service_name in SERVICE_ACTIONS:
                 if hass.services.has_service(DOMAIN, service_name):
                     hass.services.async_remove(DOMAIN, service_name)

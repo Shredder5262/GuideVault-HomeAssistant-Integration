@@ -3,56 +3,18 @@
     "step": {
       "user": {
         "title": "GuideVault",
-        "description": "Connect Home Assistant to your local GuideVault instance. Use the command token from GuideVault's Home Assistant settings if you want reader controls.",
+        "description": "Connect Home Assistant to your local GuideVault instance.",
         "data": {
           "base_url": "GuideVault URL",
-          "command_token": "Command token",
-          "entity_prefix": "Entity prefix",
-          "scan_interval": "Polling interval in seconds",
-          "enable_controls": "Enable reader control entities",
-          "enable_background_controls": "Enable background control entities"
-        }
-      },
-      "reconfigure": {
-        "title": "Reconfigure GuideVault",
-        "description": "Update the GuideVault connection and control options.",
-        "data": {
-          "base_url": "GuideVault URL",
-          "command_token": "Command token",
-          "entity_prefix": "Entity prefix",
-          "scan_interval": "Polling interval in seconds",
-          "enable_controls": "Enable reader control entities",
-          "enable_background_controls": "Enable background control entities"
+          "command_token": "GuideVault command token"
         }
       }
     },
     "error": {
-      "cannot_connect": "Unable to connect to GuideVault.",
-      "unknown": "Unexpected error."
+      "cannot_connect": "Unable to connect to GuideVault. Check the URL and make sure GuideVault is running."
     },
     "abort": {
-      "already_configured": "This GuideVault instance is already configured.",
-      "reconfigure_successful": "GuideVault was reconfigured successfully."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "GuideVault options",
-        "description": "Update the GuideVault connection, polling, and reader control options.",
-        "data": {
-          "base_url": "GuideVault URL",
-          "command_token": "Command token",
-          "entity_prefix": "Entity prefix",
-          "scan_interval": "Polling interval in seconds",
-          "enable_controls": "Enable reader control entities",
-          "enable_background_controls": "Enable background control entities"
-        }
-      }
-    },
-    "error": {
-      "cannot_connect": "Unable to connect to GuideVault.",
-      "unknown": "Unexpected error."
+      "already_configured": "This GuideVault instance is already configured."
     }
   },
   "entity": {
