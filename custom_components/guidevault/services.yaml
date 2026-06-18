@@ -328,16 +328,6 @@ toggle_overlay:
       selector:
         text:
 
-toggle_fullscreen:
-  name: Toggle fullscreen
-  description: Compatibility alias. Sends GuideVault action toggle_overlay.
-  fields:
-    entry_id:
-      name: Entry ID
-      required: false
-      selector:
-        text:
-
 set_background:
   name: Set background
   description: Set the active GuideVault reader background. Requires GuideVault server-side support for action set_background.

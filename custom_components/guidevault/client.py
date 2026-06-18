@@ -34,8 +34,6 @@ ACTION_ALIASES = {
     "go_to_page": "set_page",
     "displayMode": "set_display_mode",
     "display_mode": "set_display_mode",
-    "fullscreen": "toggle_overlay",
-    "toggle_fullscreen": "toggle_overlay",
     "close": "close_reader",
     "manual": "open_manual",
     "strategyGuide": "open_strategy_guide",

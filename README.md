@@ -87,22 +87,34 @@ Use HTTPS: unchecked
 
 ## Background controls
 
-Background and background brightness are reported as sensors if GuideVault status exposes them, but active controls were removed in v0.5.0 because those commands were not part of the confirmed working REST command list. Add them back after GuideVault exposes working actions for them.
+Background and background brightness are active controls. Background selection requires GuideVault to report installed background names in the status payload. Background brightness sends `set_background_brightness`.
 
 
 ## v0.5.1
 
 - Fixed Home Assistant `hass.helpers` button press error by using `async_call_later`.
-- Added active `Toggle fullscreen` button entity as a compatibility alias for `toggle_overlay`.
+- Fixed a temporary fullscreen compatibility alias; later removed in v0.5.2/v0.5.3 because GuideVault does not expose a real fullscreen command.
 - Restored active background and background brightness controls.
 - Background controls send `set_background` and `set_background_brightness`; these still require matching GuideVault server-side command support.
 
 
 ## v0.5.2
 
-- Removes the broken Toggle fullscreen button entity. Use Toggle overlay instead.
-- Display mode now defaults to `2 page` when GuideVault status does not report a value.
-- Background selector now recursively discovers background lists from nested status payloads and filters `unknown`/`unavailable`.
-- Background brightness control uses box mode instead of slider mode to avoid Home Assistant opening the more-info dialog when dragging to 0.
-- Removes redundant background/background brightness sensors; the select and number entities are the active state/control surfaces.
-- Reorders the remote card so Close reader sits with the other reader buttons.
+- Removed the broken Toggle fullscreen button entity. Use Toggle overlay instead.
+- Display mode defaults to `2 page` when GuideVault status does not report a value.
+- Background selector recursively searches nested status payloads for background lists and filters `unknown`/`unavailable`.
+- Removed redundant background/background brightness sensors; the select and number entities are the active state/control surfaces.
+- Reordered the remote card so Close reader sits with the other reader buttons.
+
+## v0.5.3
+
+- Restored Background brightness as a slider.
+- Set Background brightness slider range to 1-100 to avoid the Home Assistant zero-drag more-info edge case.
+- Removed the leftover `toggle_fullscreen` service definition and fullscreen action aliases.
+- Clarified that background options require GuideVault status to expose installed backgrounds.
+
+## GuideVault status payload notes
+
+The Background selector can only show installed backgrounds when GuideVault returns them in the Home Assistant status payload, for example `availableBackgrounds`, `backgrounds`, or `reader.availableBackgrounds`. If the status payload only includes reader state and does not include a background list, Home Assistant will only show the safe fallback option `default`.
+
+The Background brightness control is a slider from 1 to 100. The lower bound intentionally avoids 0 because some Home Assistant dashboards open the entity details panel when an inline slider is dragged completely left.

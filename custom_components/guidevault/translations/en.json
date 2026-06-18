@@ -90,7 +90,7 @@
         "name": "Display mode"
       },
       "fullscreen": {
-        "name": "Overlay / fullscreen"
+        "name": "Overlay"
       },
       "version": {
         "name": "Version"
