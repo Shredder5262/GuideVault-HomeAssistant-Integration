@@ -1,9 +1,9 @@
 # GuideVault Home Assistant Integration
 
-## v0.6.2
+## v0.6.3
 
-- Fixes button/number/select actions failing after the command is sent on newer Home Assistant builds by replacing the removed `hass.helpers` delayed-refresh path with the supported event helper.
-- Keeps the 0.6.0/0.6.1 device layout, setup wizard, GuideVault branding, background selector, brightness slider, and single Fullscreen button.
+- Renames the reader fullscreen control to **Focus fullscreen** to make it clear that this is GuideVault's app-level focused reader view, not browser-native fullscreen.
+- Keeps the 0.6.0/0.6.1/0.6.2 device layout, setup wizard, GuideVault branding, background selector, brightness slider, and button/action behavior.
 
 
 Home Assistant custom integration for controlling a local GuideVault server.
@@ -65,7 +65,7 @@ The integration adds sensors for:
 - Display mode
 - Background
 - Background brightness
-- Fullscreen
+- Fullscreen status
 - Version
 
 These sensors read:
@@ -281,7 +281,7 @@ Changes the default control action names to match the original GuideVault REST c
 | Previous page | `previous` |
 | First page | `first` |
 | Last page | `last` |
-| Fullscreen | `fullscreen` |
+| Focus fullscreen | `fullscreen` |
 | Zoom | `zoom` |
 | Background | `background` |
 | Background brightness | `backgroundBrightness` |
@@ -298,8 +298,8 @@ Display mode options are limited to:
 Background options are read from the GuideVault status response when the server exposes installed/available backgrounds. If the status API does not expose installed backgrounds yet, Home Assistant can only show fallback options.
 
 
-## v0.6.2 note
+## v0.6.3 note
 
 This release keeps the original friendly setup flow and options menu, but updates the command actions to the current GuideVault Home Assistant server contract.
 
-It restores/keeps the device controls for page navigation, fullscreen, close reader, display mode, background, background brightness, page number, zoom, and overlay toggle. Background previous/next controls were removed in favor of the Background selector.
+It restores/keeps the device controls for page navigation, focus fullscreen, close reader, display mode, background, background brightness, page number, zoom, and overlay toggle. Background previous/next controls were removed in favor of the Background selector.

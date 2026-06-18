@@ -207,8 +207,8 @@ go_to_page:
           mode: box
 
 fullscreen:
-  name: Fullscreen
-  description: Enter fullscreen mode in GuideVault.
+  name: Focus fullscreen
+  description: Focus the GuideVault reader into the app-level fullscreen layout. This does not force browser-native fullscreen.
   fields:
     entry_id:
       name: Entry ID

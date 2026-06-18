@@ -39,7 +39,7 @@ BUTTONS: tuple[GuideVaultButtonDescription, ...] = (
     GuideVaultButtonDescription("previous_page", "Previous page", ACTION_PAGE_PREVIOUS, "mdi:chevron-left"),
     GuideVaultButtonDescription("next_page", "Next page", ACTION_PAGE_NEXT, "mdi:chevron-right"),
     GuideVaultButtonDescription("last_page", "Last page", ACTION_PAGE_LAST, "mdi:page-last"),
-    GuideVaultButtonDescription("fullscreen", "Fullscreen", ACTION_FULLSCREEN, "mdi:fullscreen"),
+    GuideVaultButtonDescription("fullscreen", "Focus fullscreen", ACTION_FULLSCREEN, "mdi:fullscreen"),
     GuideVaultButtonDescription("toggle_overlay", "Toggle overlay", ACTION_TOGGLE_OVERLAY, "mdi:layers-outline"),
     GuideVaultButtonDescription("zoom_in", "Zoom in", ACTION_ZOOM_IN, "mdi:magnify-plus-outline"),
     GuideVaultButtonDescription("zoom_out", "Zoom out", ACTION_ZOOM_OUT, "mdi:magnify-minus-outline"),

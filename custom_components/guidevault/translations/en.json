@@ -55,7 +55,7 @@
         "name": "Last page"
       },
       "fullscreen": {
-        "name": "Fullscreen"
+        "name": "Focus fullscreen"
       },
       "close_reader": {
         "name": "Close reader"

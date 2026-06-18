@@ -27,7 +27,7 @@ cards:
       action: call-service
       service: guidevault.last_page
   - type: button
-    name: Fullscreen
+    name: Focus fullscreen
     icon: mdi:fullscreen
     tap_action:
       action: call-service
