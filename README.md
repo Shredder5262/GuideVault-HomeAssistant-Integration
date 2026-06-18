@@ -1,5 +1,11 @@
 # GuideVault Home Assistant Integration
 
+## v0.6.2
+
+- Fixes button/number/select actions failing after the command is sent on newer Home Assistant builds by replacing the removed `hass.helpers` delayed-refresh path with the supported event helper.
+- Keeps the 0.6.0/0.6.1 device layout, setup wizard, GuideVault branding, background selector, brightness slider, and single Fullscreen button.
+
+
 Home Assistant custom integration for controlling a local GuideVault server.
 
 ## Features
@@ -292,7 +298,7 @@ Display mode options are limited to:
 Background options are read from the GuideVault status response when the server exposes installed/available backgrounds. If the status API does not expose installed backgrounds yet, Home Assistant can only show fallback options.
 
 
-## v0.6.1 note
+## v0.6.2 note
 
 This release keeps the original friendly setup flow and options menu, but updates the command actions to the current GuideVault Home Assistant server contract.
 

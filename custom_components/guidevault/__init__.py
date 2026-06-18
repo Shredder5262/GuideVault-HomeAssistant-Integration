@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_call_later
 
 from .client import (
     GuideVaultApiError,
@@ -335,14 +336,14 @@ async def async_send_command(
         await coordinator.async_request_refresh()
 
         @callback
-        def _delayed_refresh(_now):
-            coordinator.async_request_refresh()
+        def _delayed_refresh(_now) -> None:
+            hass.async_create_task(coordinator.async_request_refresh())
 
         # GuideVault may update reader status just after the command response.
         # Multiple delayed refreshes make button presses and number/select
         # controls feel more responsive in the Home Assistant UI.
-        hass.helpers.event.async_call_later(0.25, _delayed_refresh)
-        hass.helpers.event.async_call_later(1.00, _delayed_refresh)
+        async_call_later(hass, 0.25, _delayed_refresh)
+        async_call_later(hass, 1.00, _delayed_refresh)
 
 
 def _get_client(hass: HomeAssistant, entry_id: str | None) -> GuideVaultClient:
