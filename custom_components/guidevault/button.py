@@ -16,12 +16,10 @@ from .const import (
     ACTION_PAGE_LAST,
     ACTION_PAGE_NEXT,
     ACTION_PAGE_PREVIOUS,
-    ACTION_TOGGLE_FULLSCREEN,
+    ACTION_FULLSCREEN,
     ACTION_TOGGLE_OVERLAY,
     ACTION_ZOOM_IN,
     ACTION_ZOOM_OUT,
-    ACTION_NEXT_BACKGROUND,
-    ACTION_PREVIOUS_BACKGROUND,
     DOMAIN,
 )
 
@@ -41,12 +39,10 @@ BUTTONS: tuple[GuideVaultButtonDescription, ...] = (
     GuideVaultButtonDescription("previous_page", "Previous page", ACTION_PAGE_PREVIOUS, "mdi:chevron-left"),
     GuideVaultButtonDescription("next_page", "Next page", ACTION_PAGE_NEXT, "mdi:chevron-right"),
     GuideVaultButtonDescription("last_page", "Last page", ACTION_PAGE_LAST, "mdi:page-last"),
-    GuideVaultButtonDescription("toggle_fullscreen", "Toggle fullscreen", ACTION_TOGGLE_FULLSCREEN, "mdi:fullscreen"),
+    GuideVaultButtonDescription("fullscreen", "Fullscreen", ACTION_FULLSCREEN, "mdi:fullscreen"),
     GuideVaultButtonDescription("toggle_overlay", "Toggle overlay", ACTION_TOGGLE_OVERLAY, "mdi:layers-outline"),
     GuideVaultButtonDescription("zoom_in", "Zoom in", ACTION_ZOOM_IN, "mdi:magnify-plus-outline"),
     GuideVaultButtonDescription("zoom_out", "Zoom out", ACTION_ZOOM_OUT, "mdi:magnify-minus-outline"),
-    GuideVaultButtonDescription("previous_background", "Previous background", ACTION_PREVIOUS_BACKGROUND, "mdi:image-arrow-left"),
-    GuideVaultButtonDescription("next_background", "Next background", ACTION_NEXT_BACKGROUND, "mdi:image-arrow-right"),
     GuideVaultButtonDescription("close_reader", "Close reader", ACTION_CLOSE, "mdi:close-box-outline"),
 )
 

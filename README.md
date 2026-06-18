@@ -163,7 +163,7 @@ data:
 ```
 
 ```yaml
-service: guidevault.toggle_fullscreen
+service: guidevault.fullscreen
 ```
 
 ```yaml
@@ -275,7 +275,7 @@ Changes the default control action names to match the original GuideVault REST c
 | Previous page | `previous` |
 | First page | `first` |
 | Last page | `last` |
-| Toggle fullscreen | `fullscreen` |
+| Fullscreen | `fullscreen` |
 | Zoom | `zoom` |
 | Background | `background` |
 | Background brightness | `backgroundBrightness` |
@@ -292,8 +292,8 @@ Display mode options are limited to:
 Background options are read from the GuideVault status response when the server exposes installed/available backgrounds. If the status API does not expose installed backgrounds yet, Home Assistant can only show fallback options.
 
 
-## v0.6.0 note
+## v0.6.1 note
 
 This release keeps the original friendly setup flow and options menu, but updates the command actions to the current GuideVault Home Assistant server contract.
 
-It restores/keeps the device controls for page navigation, fullscreen, close reader, display mode, background, background brightness, page number, zoom, overlay toggle, zoom in/out, and background cycling.
+It restores/keeps the device controls for page navigation, fullscreen, close reader, display mode, background, background brightness, page number, zoom, and overlay toggle. Background previous/next controls were removed in favor of the Background selector.

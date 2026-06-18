@@ -31,7 +31,7 @@ cards:
     icon: mdi:fullscreen
     tap_action:
       action: call-service
-      service: guidevault.toggle_fullscreen
+      service: guidevault.fullscreen
   - type: button
     name: Close
     icon: mdi:close-box-outline
@@ -57,15 +57,3 @@ cards:
     tap_action:
       action: call-service
       service: guidevault.zoom_out
-  - type: button
-    name: Prev Background
-    icon: mdi:image-arrow-left
-    tap_action:
-      action: call-service
-      service: guidevault.previous_background
-  - type: button
-    name: Next Background
-    icon: mdi:image-arrow-right
-    tap_action:
-      action: call-service
-      service: guidevault.next_background

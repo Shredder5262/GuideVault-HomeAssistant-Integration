@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import urlparse
 
 import voluptuous as vol
 
@@ -22,7 +21,7 @@ from .client import (
 )
 from .const import (
     ACTION_CLOSE,
-    ACTION_NEXT_BACKGROUND,
+    ACTION_FULLSCREEN,
     ACTION_OPEN,
     ACTION_PAGE_FIRST,
     ACTION_PAGE_GOTO,
@@ -33,12 +32,9 @@ from .const import (
     ACTION_SET_BACKGROUND_BRIGHTNESS,
     ACTION_SET_DISPLAY_MODE,
     ACTION_SET_ZOOM,
-    ACTION_TOGGLE_FULLSCREEN,
     ACTION_TOGGLE_OVERLAY,
-    ACTION_PREVIOUS_BACKGROUND,
     ACTION_ZOOM_IN,
     ACTION_ZOOM_OUT,
-    COMMAND_ENDPOINT,
     CONF_API_KEY,
     CONF_COMMAND_ENDPOINT,
     CONF_SCAN_INTERVAL,
@@ -57,6 +53,7 @@ from .const import (
     SERVICE_CLOSE_READER,
     SERVICE_COMMAND,
     SERVICE_FIRST_PAGE,
+    SERVICE_FULLSCREEN,
     SERVICE_GO_TO_PAGE,
     SERVICE_LAST_PAGE,
     SERVICE_NEXT_PAGE,
@@ -66,13 +63,9 @@ from .const import (
     SERVICE_SET_BACKGROUND_BRIGHTNESS,
     SERVICE_SET_DISPLAY_MODE,
     SERVICE_SET_ZOOM,
-    SERVICE_TOGGLE_FULLSCREEN,
     SERVICE_TOGGLE_OVERLAY,
-    SERVICE_NEXT_BACKGROUND,
-    SERVICE_PREVIOUS_BACKGROUND,
     SERVICE_ZOOM_IN,
     SERVICE_ZOOM_OUT,
-    STATUS_ENDPOINT,
 )
 from .coordinator import GuideVaultDataUpdateCoordinator
 
@@ -155,68 +148,36 @@ SET_DISPLAY_MODE_SCHEMA = vol.Schema(
 )
 
 
-def _entry_connection_data(entry: ConfigEntry) -> dict[str, Any]:
-    """Return connection data for old and newer GuideVault config entry shapes."""
-    data = dict(entry.data)
-
-    if CONF_HOST in data:
-        return data
-
-    # Compatibility with the generated 0.5.x packages that used base_url and
-    # command_token. This keeps existing broken entries from crashing before
-    # the user has a chance to open Options or re-add the integration.
-    base_url = str(data.get("base_url") or data.get("url") or "").strip().rstrip("/")
-    if base_url:
-        if not base_url.startswith(("http://", "https://")):
-            base_url = f"http://{base_url}"
-        parsed = urlparse(base_url)
-        return {
-            CONF_HOST: parsed.hostname or base_url,
-            CONF_PORT: parsed.port,
-            CONF_SSL: parsed.scheme == "https",
-            CONF_VERIFY_SSL: True,
-            CONF_API_KEY: data.get("command_token") or data.get(CONF_API_KEY),
-            CONF_TIMEOUT: data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
-            CONF_SCAN_INTERVAL: data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-            CONF_COMMAND_ENDPOINT: data.get(CONF_COMMAND_ENDPOINT, COMMAND_ENDPOINT),
-            CONF_STATUS_ENDPOINT: data.get(CONF_STATUS_ENDPOINT, STATUS_ENDPOINT),
-        }
-
-    return data
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GuideVault from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN].setdefault(DATA_CLIENTS, {})
     hass.data[DOMAIN].setdefault(DATA_COORDINATORS, {})
 
-    connection = _entry_connection_data(entry)
-
     session = async_get_clientsession(
         hass,
-        verify_ssl=connection.get(CONF_VERIFY_SSL, True),
+        verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
     )
 
     client = GuideVaultClient(
         session,
         GuideVaultClientConfig(
-            host=connection[CONF_HOST],
-            port=connection.get(CONF_PORT),
-            ssl=connection.get(CONF_SSL, False),
-            verify_ssl=connection.get(CONF_VERIFY_SSL, True),
-            api_key=connection.get(CONF_API_KEY),
+            host=entry.data[CONF_HOST],
+            port=entry.data.get(CONF_PORT),
+            ssl=entry.data.get(CONF_SSL, False),
+            verify_ssl=entry.data.get(CONF_VERIFY_SSL, True),
+            api_key=entry.data.get(CONF_API_KEY),
             timeout=entry.options.get(
                 CONF_TIMEOUT,
-                connection.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
+                entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
             ),
             command_endpoint=entry.options.get(
                 CONF_COMMAND_ENDPOINT,
-                connection.get(CONF_COMMAND_ENDPOINT),
+                entry.data.get(CONF_COMMAND_ENDPOINT),
             ),
             status_endpoint=entry.options.get(
                 CONF_STATUS_ENDPOINT,
-                connection.get(CONF_STATUS_ENDPOINT),
+                entry.data.get(CONF_STATUS_ENDPOINT),
             ),
         ),
     )
@@ -343,12 +304,10 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_FIRST_PAGE, lambda call: handle_simple(ACTION_PAGE_FIRST, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_LAST_PAGE, lambda call: handle_simple(ACTION_PAGE_LAST, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_GO_TO_PAGE, handle_go_to_page, schema=GO_TO_PAGE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_TOGGLE_FULLSCREEN, lambda call: handle_simple(ACTION_TOGGLE_FULLSCREEN, call), schema=SIMPLE_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_FULLSCREEN, lambda call: handle_simple(ACTION_FULLSCREEN, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_TOGGLE_OVERLAY, lambda call: handle_simple(ACTION_TOGGLE_OVERLAY, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_ZOOM_IN, lambda call: handle_simple(ACTION_ZOOM_IN, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_ZOOM_OUT, lambda call: handle_simple(ACTION_ZOOM_OUT, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_NEXT_BACKGROUND, lambda call: handle_simple(ACTION_NEXT_BACKGROUND, call), schema=SIMPLE_SCHEMA)
-    hass.services.async_register(DOMAIN, SERVICE_PREVIOUS_BACKGROUND, lambda call: handle_simple(ACTION_PREVIOUS_BACKGROUND, call), schema=SIMPLE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND, handle_set_background, schema=SET_BACKGROUND_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_BACKGROUND_BRIGHTNESS, handle_set_background_brightness, schema=SET_BACKGROUND_BRIGHTNESS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SET_ZOOM, handle_set_zoom, schema=SET_ZOOM_SCHEMA)

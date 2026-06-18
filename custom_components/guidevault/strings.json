@@ -54,8 +54,8 @@
       "last_page": {
         "name": "Last page"
       },
-      "toggle_fullscreen": {
-        "name": "Toggle fullscreen"
+      "fullscreen": {
+        "name": "Fullscreen"
       },
       "close_reader": {
         "name": "Close reader"
@@ -68,12 +68,6 @@
       },
       "zoom_out": {
         "name": "Zoom out"
-      },
-      "previous_background": {
-        "name": "Previous background"
-      },
-      "next_background": {
-        "name": "Next background"
       }
     },
     "sensor": {
@@ -128,11 +122,6 @@
       },
       "page_control": {
         "name": "Page"
-      }
-    },
-    "switch": {
-      "fullscreen_switch": {
-        "name": "Fullscreen"
       }
     }
   }
