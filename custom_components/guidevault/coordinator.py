@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -11,16 +12,24 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .api import GuideVaultApiClient, GuideVaultApiError
 from .const import DEFAULT_SCAN_INTERVAL_SECONDS, DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class GuideVaultCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Poll GuideVault status and expose convenience helpers."""
 
-    def __init__(self, hass: HomeAssistant, api: GuideVaultApiClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api: GuideVaultApiClient,
+        scan_interval_seconds: int = DEFAULT_SCAN_INTERVAL_SECONDS,
+    ) -> None:
+        interval = max(2, int(scan_interval_seconds or DEFAULT_SCAN_INTERVAL_SECONDS))
         super().__init__(
             hass,
-            hass.helpers.event.async_call_later,
+            _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL_SECONDS),
+            update_interval=timedelta(seconds=interval),
         )
         self.api = api
 

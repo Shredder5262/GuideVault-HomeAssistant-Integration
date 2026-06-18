@@ -2,7 +2,9 @@
   "domain": "guidevault",
   "name": "GuideVault",
   "after_dependencies": [],
-  "codeowners": ["@Shredder5262"],
+  "codeowners": [
+    "@Shredder5262"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://guidevault.net",
@@ -10,5 +12,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Shredder5262/GuideVault/issues",
   "requirements": [],
-  "version": "0.5.7"
+  "version": "0.5.8"
 }

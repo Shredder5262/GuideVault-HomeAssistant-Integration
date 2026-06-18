@@ -1,44 +1,43 @@
-# GuideVault Home Assistant Integration v0.5.7
+# GuideVault Home Assistant Integration v0.5.8
 
 This custom integration reads GuideVault's `/api/home-assistant/status` endpoint and queues reader commands through `/api/home-assistant/command`.
 
-## Fixed in v0.5.7
+## Fixed in v0.5.8
 
-This release makes the GuideVault reader controls explicit across Home Assistant platforms and services:
-
-- Adds/restores page control buttons:
-  - First Page
-  - Previous Page
-  - Next Page
-  - Last Page
-- Adds/restores reader control buttons:
+- Restores the setup/options form fields:
+  - GuideVault URL
+  - Command token
+  - Entity prefix
+  - Polling interval
+  - Enable reader control entities
+  - Enable background control entities
+- Fixes the data coordinator setup pattern for newer Home Assistant releases.
+- Keeps diagnostics out of the package to avoid the stale `custom_components.guidevault.diagnostics` import path.
+- Keeps all reader controls from v0.5.7:
+  - First/Previous/Next/Last page
   - Toggle Overlay
   - Toggle Fullscreen
+  - Fullscreen switch and sensor
   - Close Reader
-  - Zoom In
-  - Zoom Out
-- Adds/restores background controls:
+  - Zoom In/Out and Zoom slider
+  - Page number control
   - Reader Background select
-  - Next Background button
-  - Previous Background button
-  - Background Brightness number slider
-- Adds a controllable Fullscreen switch in addition to the Fullscreen binary sensor.
-- Adds status/version sensors:
-  - Integration Version
-  - Server Version
-  - Reader
-  - Current Item
-  - Current Item Kind
-  - Page
-  - Page Count
-  - Progress Percent
-  - Zoom
-  - Display Mode
-  - Background
-  - Background Brightness State
-- Registers explicit services such as `guidevault.next_page`, `guidevault.toggle_fullscreen`, `guidevault.close_reader`, and `guidevault.set_background_brightness` so controls remain usable even if HA's entity registry hides a platform after an update.
-- Removes packaged `__pycache__` files.
-- Uses platform string names for broader Home Assistant compatibility.
+  - Next/Previous Background
+  - Background Brightness slider
+  - Version/status sensors
+- Keeps fallback services such as `guidevault.next_page`, `guidevault.toggle_fullscreen`, `guidevault.close_reader`, and `guidevault.set_background_brightness`.
+
+## Important cleanup for failed v0.5.7 installs
+
+If Home Assistant logs mention `custom_components.guidevault.diagnostics`, delete the old integration folder before installing this package. The v0.5.8 package intentionally does not contain `diagnostics.py`, but a failed or overlaid install can leave stale files behind.
+
+Recommended cleanup:
+
+1. Stop Home Assistant.
+2. Delete `/config/custom_components/guidevault`.
+3. Copy this package's `custom_components/guidevault` folder into `/config/custom_components/guidevault` or reinstall through HACS.
+4. Start Home Assistant.
+5. Remove and re-add the GuideVault integration if the old config entry still looks broken.
 
 ## Expected entities
 
@@ -73,8 +72,6 @@ This release makes the GuideVault reader controls explicit across Home Assistant
 - `button.guidevault_next_background`
 - `button.guidevault_previous_background`
 
-## Important
+## Requirement
 
 The installed background dropdown needs GuideVault 0.9.215 or newer so `/api/home-assistant/status` returns `availableBackgrounds`.
-
-After installing this update, restart Home Assistant. If old entity registry rows are stale, reload the GuideVault integration once from Settings > Devices & services.
